@@ -1,0 +1,374 @@
+{
+ "gate": "PASS",
+ "gates_commit": "2f8f3be",
+ "overlap_diff": {
+  "max": 0.062199194420136925,
+  "mean": 0.059231617209598866,
+  "min": 0.05567573135558303,
+  "n": 5,
+  "std": 0.002364340276250491,
+  "values": [
+   0.05567573135558303,
+   0.058957033063393,
+   0.059182494866529774,
+   0.062199194420136925,
+   0.06014363234235161
+  ]
+ },
+ "overlap_margin": {
+  "max": 0.48845551864441694,
+  "mean": 0.4859368202904012,
+  "min": 0.4829596926334702,
+  "n": 5,
+  "std": 0.0021027638375238165,
+  "values": [
+   0.48845551864441694,
+   0.485777341936607,
+   0.4829596926334702,
+   0.4851820555798631,
+   0.4873094926576484
+  ]
+ },
+ "overlap_same": {
+  "max": 0.547453125,
+  "mean": 0.5451684375,
+  "min": 0.5421421875,
+  "n": 5,
+  "std": 0.0022659817607041384,
+  "values": [
+   0.54413125,
+   0.544734375,
+   0.5421421875,
+   0.54738125,
+   0.547453125
+  ]
+ },
+ "per_seed": [
+  {
+   "bytes": [
+    {
+     "F": 200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 50,
+     "mean_features": 23.008333333333333,
+     "min_features": 11
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 52,
+     "mean_features": 23.696666666666665,
+     "min_features": 11
+    },
+    {
+     "F": 3200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 53,
+     "mean_features": 23.871666666666666,
+     "min_features": 11
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 72.0,
+     "k": 16,
+     "max_features": 52,
+     "mean_features": 23.696666666666665,
+     "min_features": 11
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 52,
+     "mean_features": 23.696666666666665,
+     "min_features": 11
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 264.0,
+     "k": 64,
+     "max_features": 52,
+     "mean_features": 23.696666666666665,
+     "min_features": 11
+    }
+   ],
+   "determinism_mismatches": 0,
+   "exact_k_fraction": 1.0,
+   "mean_features": 23.928333333333335,
+   "overlap_diff": 0.05567573135558303,
+   "overlap_margin": 0.48845551864441694,
+   "overlap_same": 0.54413125,
+   "pass": true,
+   "seed": 0,
+   "unit_rate_cv": 1.1614533041744632
+  },
+  {
+   "bytes": [
+    {
+     "F": 200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 49,
+     "mean_features": 23.18166666666667,
+     "min_features": 8
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 56,
+     "mean_features": 23.823333333333334,
+     "min_features": 8
+    },
+    {
+     "F": 3200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 56,
+     "mean_features": 23.988333333333333,
+     "min_features": 8
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 72.0,
+     "k": 16,
+     "max_features": 56,
+     "mean_features": 23.823333333333334,
+     "min_features": 8
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 56,
+     "mean_features": 23.823333333333334,
+     "min_features": 8
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 264.0,
+     "k": 64,
+     "max_features": 56,
+     "mean_features": 23.823333333333334,
+     "min_features": 8
+    }
+   ],
+   "determinism_mismatches": 0,
+   "exact_k_fraction": 1.0,
+   "mean_features": 23.639333333333333,
+   "overlap_diff": 0.058957033063393,
+   "overlap_margin": 0.485777341936607,
+   "overlap_same": 0.544734375,
+   "pass": true,
+   "seed": 1,
+   "unit_rate_cv": 1.2478673362536936
+  },
+  {
+   "bytes": [
+    {
+     "F": 200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 52,
+     "mean_features": 22.975,
+     "min_features": 9
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 56,
+     "mean_features": 23.641666666666666,
+     "min_features": 9
+    },
+    {
+     "F": 3200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 56,
+     "mean_features": 23.825,
+     "min_features": 9
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 72.0,
+     "k": 16,
+     "max_features": 56,
+     "mean_features": 23.641666666666666,
+     "min_features": 9
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 56,
+     "mean_features": 23.641666666666666,
+     "min_features": 9
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 264.0,
+     "k": 64,
+     "max_features": 56,
+     "mean_features": 23.641666666666666,
+     "min_features": 9
+    }
+   ],
+   "determinism_mismatches": 0,
+   "exact_k_fraction": 1.0,
+   "mean_features": 23.711,
+   "overlap_diff": 0.059182494866529774,
+   "overlap_margin": 0.4829596926334702,
+   "overlap_same": 0.5421421875,
+   "pass": true,
+   "seed": 2,
+   "unit_rate_cv": 1.2170284393645951
+  },
+  {
+   "bytes": [
+    {
+     "F": 200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 49,
+     "mean_features": 22.62,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 53,
+     "mean_features": 23.286666666666665,
+     "min_features": 10
+    },
+    {
+     "F": 3200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 54,
+     "mean_features": 23.451666666666668,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 72.0,
+     "k": 16,
+     "max_features": 53,
+     "mean_features": 23.286666666666665,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 53,
+     "mean_features": 23.286666666666665,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 264.0,
+     "k": 64,
+     "max_features": 53,
+     "mean_features": 23.286666666666665,
+     "min_features": 10
+    }
+   ],
+   "determinism_mismatches": 0,
+   "exact_k_fraction": 1.0,
+   "mean_features": 23.683666666666667,
+   "overlap_diff": 0.062199194420136925,
+   "overlap_margin": 0.4851820555798631,
+   "overlap_same": 0.54738125,
+   "pass": true,
+   "seed": 3,
+   "unit_rate_cv": 1.2598922352504776
+  },
+  {
+   "bytes": [
+    {
+     "F": 200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 51,
+     "mean_features": 23.138333333333332,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 52,
+     "mean_features": 23.733333333333334,
+     "min_features": 10
+    },
+    {
+     "F": 3200,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 53,
+     "mean_features": 23.941666666666666,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 72.0,
+     "k": 16,
+     "max_features": 52,
+     "mean_features": 23.733333333333334,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 136.0,
+     "k": 32,
+     "max_features": 52,
+     "mean_features": 23.733333333333334,
+     "min_features": 10
+    },
+    {
+     "F": 800,
+     "bytes_per_event": 264.0,
+     "k": 64,
+     "max_features": 52,
+     "mean_features": 23.733333333333334,
+     "min_features": 10
+    }
+   ],
+   "determinism_mismatches": 0,
+   "exact_k_fraction": 1.0,
+   "mean_features": 23.670666666666666,
+   "overlap_diff": 0.06014363234235161,
+   "overlap_margin": 0.4873094926576484,
+   "overlap_same": 0.547453125,
+   "pass": true,
+   "seed": 4,
+   "unit_rate_cv": 1.234855007233193
+  }
+ ],
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "unit_rate_cv": {
+  "max": 1.2598922352504776,
+  "mean": 1.2242192644552845,
+  "min": 1.1614533041744632,
+  "n": 5,
+  "std": 0.03852332055078378,
+  "values": [
+   1.1614533041744632,
+   1.2478673362536936,
+   1.2170284393645951,
+   1.2598922352504776,
+   1.234855007233193
+  ]
+ }
+}
