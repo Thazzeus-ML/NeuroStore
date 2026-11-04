@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -72,7 +73,26 @@ def cmd_list(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _exit_cleanly_on_termination() -> None:
+    """Turn SIGTERM/SIGHUP into a normal exit so ``finally``/``atexit`` cleanup runs.
+
+    Without this a terminated run (a timeout, a stopped container) would orphan the ``redis-server`` it spawned.
+    SIGKILL cannot be handled by any process.
+    """
+
+    def handler(signum: int, _frame: object) -> None:
+        raise SystemExit(128 + signum)
+
+    for sig in (signal.SIGTERM, getattr(signal, "SIGHUP", None)):
+        if sig is not None:
+            try:
+                signal.signal(sig, handler)
+            except ValueError:  # not in the main thread (e.g. called from a test runner thread)
+                pass
+
+
 def cmd_run(args: argparse.Namespace) -> int:
+    _exit_cleanly_on_termination()
     overrides = json.loads(Path(args.config).read_text()) if args.config else None
     # a --config file may be a whole profile dump (scaffold) or a sparse override; both are per-workload dicts
     try:

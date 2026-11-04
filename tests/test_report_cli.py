@@ -275,6 +275,48 @@ def test_cli_rejects_unknown_workloads_and_strict_fails_on_a_broken_self_check(m
     assert "SELF-CHECK FAILED" in capsys.readouterr().err
 
 
+@pytest.mark.external
+def test_terminating_a_run_does_not_orphan_the_redis_server_it_spawned():
+    """SIGTERM used to bypass the `finally` blocks and leave redis-server running."""
+    import os
+    import signal as sg
+    import time
+
+    from conftest import _redis_ok
+
+    if not _redis_ok():
+        pytest.skip("redis client or redis-server missing")
+
+    def children(pid):
+        r = subprocess.run(["pgrep", "-P", str(pid), "-f", "redis-server"], capture_output=True, text=True)
+        return [int(x) for x in r.stdout.split()]
+
+    def alive(pid):
+        try:
+            return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0] != "Z"  # a zombie is dead
+        except OSError:
+            return False
+
+    proc = subprocess.Popen([sys.executable, "-m", "neurostore", "run", "-w", "a", "--profile", "quick", "--quiet"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.time() + 60
+        kids = []
+        while not kids and time.time() < deadline and proc.poll() is None:
+            kids = children(proc.pid)
+            time.sleep(0.05)
+        assert kids, "the run never started a redis-server"
+        proc.send_signal(sg.SIGTERM)
+        proc.wait(timeout=30)
+        assert proc.returncode == 128 + sg.SIGTERM
+        time.sleep(0.5)
+        assert not [k for k in kids if alive(k)], "redis-server was orphaned by SIGTERM"
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+        for k in children(proc.pid) if proc.poll() is None else []:
+            os.kill(k, sg.SIGKILL)
+
+
 def test_REGRESSION_module_entry_point_parses_and_runs():
     """The original neurostore_cli.py could not even be imported (`run_parser subparsers.add_parser(...)`, missing '=')."""
     for args in (["--help"], ["run", "--help"], ["list"]):

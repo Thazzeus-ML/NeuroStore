@@ -7,6 +7,7 @@ memory per pair at 0% noise.
 """
 from __future__ import annotations
 
+import atexit
 import os
 import shutil
 import socket
@@ -178,6 +179,7 @@ class RedisKVSystem(_KVBase):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
+        atexit.register(self.close)  # idempotent; also reached on SystemExit/SIGTERM-as-exit (see cli.py)
         self._r = redis.Redis(host="127.0.0.1", port=port)
         for _ in range(100):
             try:
