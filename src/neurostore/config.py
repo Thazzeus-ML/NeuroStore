@@ -35,7 +35,8 @@ class Config:
     lag_window: float = 3.0
     tau_k: float = 2.0
     n_lags: int = 3
-    prune_R: int = 96           # out-edges kept per pre unit at merge
+    within_event: bool = True   # also learn dt=0 co-firing edges inside one event
+    prune_R: int = 128          # out-edges kept per pre unit at merge
     eps: float = 1e-3
     hops: int = 2
     hop_decay: float = 0.5

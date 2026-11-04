@@ -37,9 +37,11 @@ def rate_readout(asm, counts: np.ndarray, n_events: int) -> np.ndarray:
     return np.where(den > 0, (W @ counts.astype(np.float32)) / np.where(den > 0, den, 1.0), 0.0)
 
 
-def temporal_readout(lattice, units, strength=None, hops=2, hop_decay=0.5, keep=96, m=32, exclude=None):
+def temporal_readout(lattice, units, strength=None, hops=2, hop_decay=0.5, keep=96, m=32, exclude=None,
+                     normalize=True, lagged_only=False):
     """What comes next: spread activation along synapses from the current active units."""
-    sc = lattice.spread(units, strength, hops=hops, hop_decay=hop_decay, keep=keep)
+    sc = lattice.spread(units, strength, hops=hops, hop_decay=hop_decay, keep=keep, normalize=normalize,
+                        lagged_only=lagged_only)
     if exclude is not None:
         sc[exclude] = 0.0
     nz = int((sc > 0).sum())

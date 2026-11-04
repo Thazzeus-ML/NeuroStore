@@ -10,6 +10,7 @@ from .spikelog import SpikeLog
 from .rates import RateCounters
 from .assembly import AssemblyIndex
 from .consolidate import Consolidator
+from .synapse import SynapseLattice
 
 
 class NeuroStore:
@@ -19,7 +20,7 @@ class NeuroStore:
         self.log = SpikeLog(cfg.k, cfg.layout)
         self.rates = RateCounters(cfg.N, cfg.rate_window, cfg.rate_sub)
         self.asm = AssemblyIndex(cfg) if cfg.assemblies else None
-        self.lattice = None          # phase 3
+        self.lattice = SynapseLattice(cfg.N, cfg.lam, cfg.prune_R, cfg.eps) if cfg.hebbian else None
         self.pred = None             # phase 4
         self.homeo = None            # phase 4
         self.cons = Consolidator(self)

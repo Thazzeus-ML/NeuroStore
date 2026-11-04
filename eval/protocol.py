@@ -61,3 +61,30 @@ def prec_mean(comps, masked):
         m = len(ms)
         ps.append(len(set(map(int, comp[:m])) & set(map(int, ms))) / m if m else 1.0)
     return float(np.mean(ps))
+
+
+def recall_at_k_batch(pred_ranked_list, nexts, k=32):
+    return float(np.mean([len(set(map(int, p[:k])) & set(map(int, n))) / len(n) for p, n in zip(pred_ranked_list, nexts)]))
+
+
+def topk_rows(S, k):
+    """rows of S -> top-k column indices (ties broken by index)"""
+    top = np.argpartition(-S, k - 1, axis=1)[:, :k]
+    return top
+
+
+class Bigram:
+    """first-order unit bigram over consecutive codes"""
+
+    def __init__(self, N):
+        self.N = N; self.B = np.zeros((N, N), np.float32); self.n = 0
+
+    def fit(self, codes):
+        X = np.zeros((len(codes), self.N), np.float32); X[np.arange(len(codes))[:, None], codes] = 1
+        self.B = X[:-1].T @ X[1:]
+        self.rown = self.B / np.maximum(self.B.sum(1, keepdims=True), 1)
+        return self
+
+    def scores(self, cur_codes, normalized=True):
+        M = self.rown if normalized else self.B
+        return np.stack([M[c].sum(0) for c in cur_codes])
