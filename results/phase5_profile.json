@@ -1,0 +1,118 @@
+{
+ "accumulate_cumulative_s": 0.11351736600000001,
+ "accumulate_fraction": 0.025814607469899217,
+ "events": 4000,
+ "gates_commit": "8c21afd",
+ "per_event_ms": 1.0993520445000513,
+ "top": [
+  {
+   "calls": 4000,
+   "cumulative_s": 4.3741840430000005,
+   "func": "store.py:write",
+   "own_s": 0.09210776500000001
+  },
+  {
+   "calls": 20,
+   "cumulative_s": 2.654776657,
+   "func": "consolidate.py:run_round",
+   "own_s": 0.006347931
+  },
+  {
+   "calls": 20,
+   "cumulative_s": 1.6348839960000001,
+   "func": "consolidate.py:_synapses",
+   "own_s": 0.602682402
+  },
+  {
+   "calls": 10,
+   "cumulative_s": 0.864912925,
+   "func": "synapse.py:merge",
+   "own_s": 0.551797718
+  },
+  {
+   "calls": 3000,
+   "cumulative_s": 0.537392914,
+   "func": "assembly.py:learn",
+   "own_s": 0.206436207
+  },
+  {
+   "calls": 20,
+   "cumulative_s": 0.47040189400000004,
+   "func": "assembly.py:maintain",
+   "own_s": 0.32767206200000004
+  },
+  {
+   "calls": 3800,
+   "cumulative_s": 0.32703522300000004,
+   "func": "assembly.py:vote",
+   "own_s": 0.128965724
+  },
+  {
+   "calls": 4000,
+   "cumulative_s": 0.26851267700000003,
+   "func": "encoder.py:encode",
+   "own_s": 0.08656870900000001
+  },
+  {
+   "calls": 4000,
+   "cumulative_s": 0.259989124,
+   "func": "predict.py:expected",
+   "own_s": 0.057977175000000006
+  },
+  {
+   "calls": 4018,
+   "cumulative_s": 0.192676954,
+   "func": "util.py:gather_ranges",
+   "own_s": 0.07811324700000001
+  },
+  {
+   "calls": 4000,
+   "cumulative_s": 0.17883954500000002,
+   "func": "encoder.py:normalize_features",
+   "own_s": 0.056950181
+  },
+  {
+   "calls": 4000,
+   "cumulative_s": 0.143145519,
+   "func": "homeostasis.py:update",
+   "own_s": 0.09642606000000001
+  },
+  {
+   "calls": 7464,
+   "cumulative_s": 0.13801771300000001,
+   "func": "encoder.py:q8",
+   "own_s": 0.048104873000000006
+  },
+  {
+   "calls": 4000,
+   "cumulative_s": 0.124124256,
+   "func": "rates.py:update",
+   "own_s": 0.12357762000000001
+  },
+  {
+   "calls": 145,
+   "cumulative_s": 0.12221608900000001,
+   "func": "synapse.py:spread",
+   "own_s": 0.0031727590000000003
+  },
+  {
+   "calls": 145,
+   "cumulative_s": 0.11351736600000001,
+   "func": "synapse.py:accumulate",
+   "own_s": 0.011207607000000001
+  },
+  {
+   "calls": 145,
+   "cumulative_s": 0.10168668900000001,
+   "func": "synapse.py:gather",
+   "own_s": 0.0014723520000000001
+  },
+  {
+   "calls": 20,
+   "cumulative_s": 0.09306281500000001,
+   "func": "assembly.py:_build_index",
+   "own_s": 0.029804383
+  }
+ ],
+ "total_s": 4.397408178000205
+}

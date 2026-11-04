@@ -163,3 +163,99 @@ repeats_append = 5
 graph_out_degree = 128
 min_margin = 0.10
 min_seed_wins = 4
+
+[phase6]
+# Phase 6 (ablation, reporting gate): rerun the phase 2-4 metrics (plus rate and surprise read-outs) with each
+# principle removed in turn. FULL system: k=32, homeostasis, surprise gate (tau fixed below, assembly-persistence
+# expectation), Hebbian lattice, batch consolidation with hot replay. Variants: no_sparsity (k=256, d=16),
+# no_surprise_gate, no_hebbian, no_homeostasis, no_consolidation (immediate per-event learning, no replay/hot
+# selection), plus the no_learning_floor reference. Worlds: uniform (all variants) and Zipf s=1.0
+# (full vs no_homeostasis only). 5 seeds (0-4); train 6000 / val 1000 / test 1500 / extra 1500 (3% anomaly events).
+# Metrics: f1 and prec_lift (phase-2 task, mask 0.5; prec_lift = (P@m - chance)/(1 - chance)), temporal_lift
+# (phase-3 task; (recall - k/N)/(1 - k/N)), log_bytes_per_event, rate_cv (CV of per-unit firing rates),
+# overlap_margin (same - different concept code overlap on the test stream), surprise_auc (AUC of stored surprise
+# for anomaly events), rate_readout_corr (assembly rate readout vs true concept counts per tumbling window),
+# mean_surprise, n_assemblies.
+# DEPENDENCE RULE (a metric "depends on" a principle): the paired difference (variant - full) over seeds has
+# |mean| >= threshold (absolute for rates/lifts/AUC, relative to full for bytes/cv/n_assemblies) AND the same sign on
+# >= min_seed_agree of 5 seeds. Gate 6 PASS = every variant x metric x seed measured and every dependence verdict
+# plus every expectation below reported as met / not met. Expectations are the author's predictions, written
+# before running; they can fail.
+description = "ablations"
+n_train = 6000
+n_val = 1000
+n_test = 1500
+n_extra = 1500
+mask = 0.5
+gate_tau = 0.55
+anomaly_rate = 0.03
+zipf_s = 1.0
+threshold_abs = 0.01
+min_seed_agree = 4
+lower_is_better = ["log_bytes_per_event", "rate_cv", "mean_surprise", "n_assemblies"]
+
+[phase6.threshold_rel]
+log_bytes_per_event = 0.10
+rate_cv = 0.25
+n_assemblies = 0.25
+
+[[phase6.expect]]
+world = "uniform"
+variant = "no_sparsity"
+metric = "f1"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_sparsity"
+metric = "overlap_margin"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_surprise_gate"
+metric = "log_bytes_per_event"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_surprise_gate"
+metric = "f1"
+claim = "no_dependence"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_surprise_gate"
+metric = "temporal_lift"
+claim = "no_dependence"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_hebbian"
+metric = "temporal_lift"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_hebbian"
+metric = "surprise_auc"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_hebbian"
+metric = "f1"
+claim = "no_dependence"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_homeostasis"
+metric = "rate_cv"
+claim = "hurts"
+[[phase6.expect]]
+world = "zipf"
+variant = "no_homeostasis"
+metric = "rate_cv"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_consolidation"
+metric = "f1"
+claim = "hurts"
+[[phase6.expect]]
+world = "uniform"
+variant = "no_consolidation"
+metric = "temporal_lift"
+claim = "hurts"
