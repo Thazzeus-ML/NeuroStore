@@ -216,3 +216,18 @@ def test_describe_severity_matches_what_corrupt_does(windows):
     assert corruption.describe_severity("combined", 0.5, 10)["channels_lost"] == 2 and corruption.describe_severity("drift", 0.5, 10)["channels_drifting"] == 3
     for fam in corruption.FAMILIES:
         assert isinstance(corruption.describe_severity(fam, 0.3, 14), dict)
+
+
+def test_featurizer_clip_and_level_quantisation():
+    Z = np.random.default_rng(3).normal(0, 2.5, size=(300, 8, 4)).astype(np.float32)
+    plain = Featurizer("stats").fit(Z).transform(Z)
+    assert np.abs(plain).max() > 3.5                                              # the raw z-scores exceed the bound
+    clipped = Featurizer("stats", clip=3.0).fit(Z).transform(Z)
+    assert np.abs(clipped).max() <= 3.0 + 1e-6 and np.allclose(clipped, np.clip(plain, -3, 3), atol=1e-6)
+    q = Featurizer("stats", clip=3.0, levels=9).fit(Z)
+    Fq = q.transform(Z)
+    grid = np.linspace(-3, 3, 9)
+    assert np.abs(Fq[..., None] - grid).min(-1).max() < 1e-5                      # every value sits on one of the 9 levels
+    assert np.allclose(q.transform(Z), Fq) and q.n_features == 16
+    with pytest.raises(AssertionError):
+        Featurizer("stats", levels=8)                                             # a quantiser needs its span

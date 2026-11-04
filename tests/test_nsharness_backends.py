@@ -69,6 +69,28 @@ def test_exact_l2_equals_bruteforce_including_masked():
     assert be.reconstruct(Q, 1).shape == Q.shape
 
 
+def test_exact_l1_equals_bruteforce_including_masked_and_chunked():
+    rng = np.random.default_rng(6)
+    X = clustered(n=300); Q = X[:20] + 0.3 * rng.normal(size=(20, X.shape[1])).astype(np.float32)
+    be = make_backend("exact_l1").fit(X)
+    be._rows = lambda: 7                                              # force several query chunks
+    idx, sim = be.search(Q, 5)
+    mad = np.abs(Q[:, None, :] - X[None, :, :]).mean(-1)
+    assert np.allclose(sim, -np.sort(mad, axis=1)[:, :5], atol=1e-4) and (idx[:, 0] == mad.argmin(1)).all()
+    mask = rng.random(Q.shape) < 0.6
+    mask[:, :2] = True
+    idx, sim = make_backend("exact_l1").fit(X).search(np.where(mask, Q, 0), 3, mask)
+    for i in range(20):
+        brute = np.abs(X[:, mask[i]] - Q[i, mask[i]]).mean(1)
+        assert sim[i, 0] == pytest.approx(-brute.min(), abs=1e-4) and idx[i, 0] == brute.argmin()
+    assert be.index_bytes() == X.nbytes and np.allclose(be.raw(idx[:, 0]), X[idx[:, 0]])
+    # bounded influence: one outlier feature costs L1 linearly but L2 quadratically
+    q = np.zeros((1, 10), np.float32); q[0, 0] = 8.0                      # nine features at 0, one corrupted to 8
+    pts = np.vstack([np.zeros((1, 10), np.float32), np.full((1, 10), 0.5, np.float32)])   # A matches 9 of 10 features, B is 0.5 off on all
+    assert make_backend("exact_l1").fit(pts).search(q, 1)[0][0, 0] == 0   # mean |diff|: A 0.8, B 1.2
+    assert make_backend("exact_l2").fit(pts).search(q, 1)[0][0, 0] == 1   # mean diff^2: A 6.4, B 5.85
+
+
 def test_weights_and_readout():
     X = clustered(); y = np.arange(len(X), dtype=np.float32)
     be = make_backend("exact").fit(X)

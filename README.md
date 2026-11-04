@@ -48,7 +48,7 @@ make pdm-report   # studies/pdm_cmapss/REPORT.md from the result files
 official test the Euclidean exact store reaches RMSE 13.8 cycles against 43.1 for a constant and 17.3 for ridge; Hopfield attention matches
 it, IVF/SQ8 is about 6 % behind at 0.31x the bytes, VSA 12 % behind but the most robust to injected corruption, FlyHash 49 % behind. The
 similarity function mattered more than the storage format (cosine 1.56x worse than Euclidean), and a store must be told which sensors are
-dead (mask-aware completion NMSE 0.30 against 1.42 without). C-MAPSS is simulated, so none of this speaks to natural field corruption.
+dead (mask-aware completion NMSE 0.30 against 1.42 without). A post-hoc control suggests VSA's robustness is an L1-like bounded-influence distance that a plain Manhattan store reproduces. C-MAPSS is simulated, so none of this speaks to natural field corruption.
 
 ## Colab benchmark notebook (`colab/`)
 

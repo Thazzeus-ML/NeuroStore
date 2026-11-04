@@ -7,33 +7,42 @@ from .._util import topk_desc, iter_chunks
 
 class ExactBackend(Backend):
     """metric="cosine": cosine similarity (stores unit vectors + norms). metric="l2": similarity = -(mean squared difference per
-    feature), i.e. textbook Euclidean kNN (stores the vectors + squared norms). With a feature mask only observed features count
-    (cosine over observed features / mean squared difference over observed features)."""
+    feature), i.e. textbook Euclidean kNN (stores the vectors + squared norms). metric="l1": similarity = -(mean absolute difference
+    per feature), Manhattan kNN (stores the vectors; O(n d) per query without a BLAS shortcut). With a feature mask only observed
+    features count (cosine over observed features / mean difference over observed features)."""
     name = "exact"
     supports_mask = True
     supports_reconstruct = True
 
     def __init__(self, metric="cosine", beta=None, **extra):
-        assert metric in ("cosine", "l2"), metric
+        assert metric in ("cosine", "l2", "l1"), metric
         super().__init__(metric=metric, beta=beta, **extra)
 
     def fit(self, X, seed: int = 0):
         X = np.asarray(X, np.float32)
         self.n, self.d = X.shape
-        if self.cfg["metric"] == "l2":
+        if self.cfg["metric"] in ("l2", "l1"):
             self.X = X.copy()
-            self.xsq = (X * X).sum(1).astype(np.float32)
+            self.xsq = (X * X).sum(1).astype(np.float32) if self.cfg["metric"] == "l2" else None
         else:
             self.norm = np.maximum(np.linalg.norm(X, axis=1), 1e-12).astype(np.float32)
             self.Xn = (X / self.norm[:, None]).astype(np.float32)
         return self
 
     def _rows(self) -> int:
+        if self.cfg["metric"] == "l1":                                  # the (rows, n, d) difference tensor is materialised
+            return int(max(1, min(256, 2e7 // max(self.n * self.d, 1))))
         return int(max(1, min(1024, 5e7 // max(self.n, 1))))
 
     def sims(self, Q, mask=None):
         """(q, n) similarities (higher = more similar). With a feature mask, only observed features enter."""
         Q = np.asarray(Q, np.float32)
+        if self.cfg["metric"] == "l1":
+            diff = np.abs(Q[:, None, :] - self.X[None, :, :])
+            if mask is None:
+                return -diff.mean(-1)
+            m = np.asarray(mask, np.float32)
+            return -(diff * m[:, None, :]).sum(-1) / np.maximum(m.sum(1, keepdims=True), 1.0)
         if self.cfg["metric"] == "l2":
             if mask is None:
                 return -((Q * Q).sum(1, keepdims=True) - 2.0 * (Q @ self.X.T) + self.xsq[None, :]) / self.d
@@ -62,7 +71,7 @@ class ExactBackend(Backend):
     def raw(self, idx):
         """Stored feature vectors (de-normalised) of the given item ids (any shape)."""
         idx = np.asarray(idx)
-        if self.cfg["metric"] == "l2":
+        if self.cfg["metric"] in ("l2", "l1"):
             return self.X[idx]
         return self.Xn[idx] * self.norm[idx][..., None]
 
@@ -73,6 +82,8 @@ class ExactBackend(Backend):
         return (w[..., None] * self.raw(idx)).sum(1).astype(np.float32)
 
     def memory_report(self):
+        if self.cfg["metric"] == "l1":
+            return {"vectors_f32": self.X.nbytes}
         if self.cfg["metric"] == "l2":
             return {"vectors_f32": self.X.nbytes, "sq_norms_f32": self.xsq.nbytes}
         return {"vectors_f32": self.Xn.nbytes, "norms_f32": self.norm.nbytes}

@@ -5,11 +5,13 @@ import numpy as np
 
 class Featurizer:
     """kind="stats": per channel [last value, mean, least-squares slope, std] over the window (4C features, channel aligned).
-    kind="flatten": the T*C raw values. Then optional per-feature standardisation and optional PCA (fit on the memory only)."""
+    kind="flatten": the T*C raw values. Then optional per-feature standardisation, optional bounding (clip to [-clip, clip] z, optionally
+    quantised to `levels` evenly spaced values: the per-feature level quantiser a VSA encoder applies) and optional PCA (fit on the memory only)."""
 
-    def __init__(self, kind: str = "stats", standardize: bool = True, pca: int | None = None):
+    def __init__(self, kind: str = "stats", standardize: bool = True, pca: int | None = None, clip: float | None = None, levels: int | None = None):
         assert kind in ("stats", "flatten")
-        self.kind, self.standardize, self.pca = kind, standardize, pca
+        assert levels is None or clip is not None, "levels needs clip (the quantiser spans [-clip, clip])"
+        self.kind, self.standardize, self.pca, self.clip, self.levels = kind, standardize, pca, clip, levels
         self.mu = self.sd = self.comp = None
         self.T = self.C = None
 
@@ -23,12 +25,23 @@ class Featurizer:
         slope = np.einsum("ntc,t->nc", Z, t) / float((t ** 2).sum())
         return np.concatenate([Z[:, -1, :], Z.mean(1), slope, Z.std(1)], axis=1).astype(np.float32)
 
+    def _bound(self, F: np.ndarray) -> np.ndarray:
+        if self.clip is None:
+            return F
+        c = float(self.clip)
+        F = np.clip(F, -c, c)
+        if self.levels:
+            step = 2.0 * c / (int(self.levels) - 1)
+            F = np.rint((F + c) / step) * step - c
+        return F
+
     def fit(self, Z: np.ndarray) -> "Featurizer":
         self.T, self.C = Z.shape[1], Z.shape[2]
         F = self._raw(Z)
         if self.standardize:
             self.mu, self.sd = F.mean(0), np.maximum(F.std(0), 1e-6)
             F = (F - self.mu) / self.sd
+        F = self._bound(F)
         if self.pca:
             Fc = F - F.mean(0)
             _, _, Vt = np.linalg.svd(Fc, full_matrices=False)
@@ -40,6 +53,7 @@ class Featurizer:
         F = self._raw(Z)
         if self.standardize:
             F = (F - self.mu) / self.sd
+        F = self._bound(F)
         if self.pca:
             F = (F - self.pca_mean) @ self.comp.T
         return F.astype(np.float32)

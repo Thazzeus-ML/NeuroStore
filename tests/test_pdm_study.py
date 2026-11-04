@@ -138,9 +138,14 @@ def test_runner_end_to_end_on_fake_data():
     assert set(sw["variants"]) >= {"exact", "exact_l2", "vsa", "ridge"} and sw["levels"]["noise"]["L50"]["meaning"]
     rows = {r["id"]: r["verdict"] for r in EG.evaluate(out)}
     assert rows["G0"] == "NOT HELD"                                           # fast mode can never pass the provenance gate
+    ph = subprocess.run([sys.executable, "-I", str(ROOT / "studies" / "pdm_cmapss" / "posthoc_quantized.py"), "--fast", "--results", str(out), "--data-root", str(out / "data")],
+                        capture_output=True, text=True, timeout=600)
+    assert ph.returncode == 0, ph.stdout[-1500:] + ph.stderr[-1500:]
+    pj = json.loads((out / "posthoc_quantized.json").read_text())
+    assert pj["meta"]["exploratory"] is True and set(pj["variants"]) == {"exact_l2_clip3", "exact_l2_q32", "exact_l1", "exact_l1_clip3"}
     rep = subprocess.run([sys.executable, "-I", str(ROOT / "studies" / "pdm_cmapss" / "make_report.py"), "--results", str(out), "--out", str(out / "REPORT.md"),
                           "--no-narrative"], capture_output=True, text=True, timeout=300)
     assert rep.returncode == 0, rep.stderr[-2000:]
     text = (out / "REPORT.md").read_text()
-    assert "## Gate verdicts" in text and "| G0 | **NOT HELD** |" in text and "## E5 Latency" in text
+    assert "## Gate verdicts" in text and "| G0 | **NOT HELD** |" in text and "## E5 Latency" in text and "## Post-hoc control" in text
     shutil.rmtree(out, ignore_errors=True)

@@ -1,7 +1,7 @@
 PY ?= python3
 export PYTHONPATH := src:.
 
-.PHONY: test bench report clean colab-build colab-validate colab-review pdm-fetch pdm-study pdm-gates pdm-report pdm-figures
+.PHONY: test bench report clean colab-build colab-validate colab-review pdm-fetch pdm-study pdm-gates pdm-report pdm-figures pdm-posthoc
 test:
 	$(PY) -m pytest
 
@@ -46,3 +46,7 @@ pdm-report:
 FIG_PY ?= $(PY)
 pdm-figures:
 	$(FIG_PY) studies/pdm_cmapss/make_figures.py
+
+# exploratory control run AFTER the pre-registered study (needs results/pdm_cmapss/sweeps_cache from `make pdm-study`)
+pdm-posthoc:
+	$(PY) -I studies/pdm_cmapss/posthoc_quantized.py
