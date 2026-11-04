@@ -45,10 +45,14 @@ class Config:
     asm_max: int = 160
     asm_match_min: int = 5
     asm_cover_min: float = 0.2
-    asm_member_tau: float = 0.3
+    asm_member_tau: float = 0.2
     asm_gamma_min: float = 0.03
     asm_new_min: int = 10
     asm_prune_support: int = 3
+    asm_prune_age: int = 2
+    asm_merge_co: float = 0.5
+    asm_claim: bool = False      # explaining-away: units claimed by another assembly are not credited
+    asm_merge_min_n: int = 8
     asm_merge_cos: float = 0.7
     # ---- rates
     rate_window: float = 50.0
