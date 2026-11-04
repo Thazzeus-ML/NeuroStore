@@ -69,3 +69,29 @@ grid_ns_map_thr    = [0.3, 0.5]
 grid_ns_complete_a = [1, 2, 3]
 grid_nn_k          = [1, 3, 5, 10]
 grid_nn_vote_thr   = [0.3, 0.5, 0.7]
+
+[phase3]
+# Gate 3: top-k next-unit prediction on the held-out test stream.
+# Per seed: default world (no drift, uniform popularity), train 6000 / val 1000 / test 1500 events.
+# NeuroStore: homeostasis off, UNGATED log, assemblies on, Hebbian lattice on, batch consolidation
+# (every 200 events, every event replayed, merge delta->lattice every 2 rounds), lambda = 0.03 per
+# epoch (fixed, not tuned). Model is frozen at test time.
+# Task: for each consecutive test pair (event t -> event t+1) give the full code of event t and
+# predict the k=32 units of event t+1; metric = recall@k = |top-32 predicted ∩ actual next units| / 32.
+# Baselines are trained on the same train codes: (1) global unit frequency, (2) first-order unit
+# bigram (counts over consecutive train pairs; score = sum over active units of row-normalised counts;
+# raw-count variant also tried, better of the two on validation is used).
+# NeuroStore read parameters chosen per seed on the validation stream from the grids below.
+# Pass: mean recall@k of NeuroStore exceeds BOTH baselines by >= margin on the mean over seeds, AND is
+# higher than each baseline on >= min_seed_wins of 5 seeds.
+# Unit tests (not gates): lazy decay == eager decay (rtol 1e-4); lattice+delta reads == merged lattice reads.
+# Reported, not gated: oracle ceiling; behaviour after the drift point (separate drift run).
+description = "temporal readout vs global-frequency and bigram baselines"
+n_train = 6000
+n_val   = 1000
+n_test  = 1500
+recall_margin_abs = 0.01
+min_seed_wins     = 4
+grid_hops         = [1, 2]
+grid_lagged_only  = [false, true]
+grid_normalize    = [true, false]
