@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurostore"
+version = "0.1.0"
+description = "Benchmark and practical-evaluation framework for a neural-coding data architecture (Hopfield, FlyHash, VSA, CIM)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# External baselines. Every one of them is optional: the framework detects what is
+# installed and records the rest as "skipped" in the results instead of failing.
+ann = ["faiss-cpu", "qdrant-client"]
+lsh = ["datasketch"]
+kv = ["rocksdict", "redis"]
+threads = ["threadpoolctl"]
+dev = ["pytest"]
+all = ["faiss-cpu", "qdrant-client", "datasketch", "rocksdict", "redis", "threadpoolctl", "pytest"]
+
+[project.scripts]
+neurostore = "neurostore.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["neurostore*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+markers = [
+    "slow: longer-running statistical validation tests",
+    "external: needs an optional third-party baseline (skipped automatically when missing)",
+]

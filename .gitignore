@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.venv/
+venv/
+# scratch output; the committed reference run lives in results/standard/
+results/scratch/
+benchmark_workspace/
