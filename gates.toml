@@ -20,3 +20,22 @@ tol_chain_tv            = 0.03   # TV distance, empirical primary-concept freq v
 tol_self_transition_abs = 0.015  # P(primary_{t+1}==primary_t) vs analytic sum_i pi_i P_ii
 drift_members_exact     = true   # exactly round(drift_frac*M) members replaced per concept
 require_all_seeds       = true   # every one of the 5 seeds must satisfy every criterion
+
+[phase1]
+# Gate 1: determinism and bounded bytes per event hold. Overlap is reported, with a
+# minimum same-vs-different margin that must hold on every seed.
+# Default code geometry (fixed before running): N=1024 units, k=32 active (3.1%), each raw
+# feature projects to d=2 units.
+description = "exactly-k, determinism, bytes/event depends on k only, same>diff overlap"
+n_events                 = 3000
+N                        = 1024
+k                        = 32
+d                        = 2
+exact_k_fraction         = 1.0    # fraction of events with exactly k distinct units
+determinism_mismatches   = 0      # identical seed => byte-identical log; encode(x) twice identical
+bytes_per_event_formula  = "8 + 4*k"   # volley: event_id u32 + t f32 + k*(unit u16 + strength u8 + surprise u8)
+bytes_per_event_tol      = 0.0         # exact: stored bytes/event must equal the formula
+raw_feature_regimes      = [200, 800, 3200]  # F values; bytes/event must be identical across them
+k_values                 = [16, 32, 64]      # bytes/event must follow the formula for each k
+overlap_margin_min       = 0.10   # mean(same-concept overlap) - mean(different-concept overlap), every seed
+overlap_pairs            = 20000
