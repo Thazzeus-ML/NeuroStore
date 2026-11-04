@@ -304,7 +304,7 @@
   }
  },
  "gate": "FAIL",
- "gates_commit": "098d131",
+ "gates_commit": "c7d80c4",
  "n_assemblies": {
   "max": 88.0,
   "mean": 77.6,
@@ -321,17 +321,17 @@
  },
  "per_seed": [
   {
-   "build_s": 2.5696281529999396,
+   "build_s": 2.712062779000007,
    "concepts_covered": 40,
    "cost": {
     "exact_bytes": 48000,
-    "exact_query_us": 114.87749986827112,
+    "exact_query_us": 120.67599982401589,
     "n_train_events": 6000,
     "nn_bytes_dense": 24576000,
     "nn_bytes_packed": 768000,
-    "nn_query_us": 643.0399998862413,
+    "nn_query_us": 832.2759999828122,
     "ns_index_bytes": 37920,
-    "ns_query_us": 119.0794999956779
+    "ns_query_us": 198.270000055345
    },
    "masks": {
     "0.0": {
@@ -444,17 +444,17 @@
    "seed": 0
   },
   {
-   "build_s": 2.5312964760000796,
+   "build_s": 2.741758841999399,
    "concepts_covered": 40,
    "cost": {
     "exact_bytes": 48000,
-    "exact_query_us": 114.17449991313333,
+    "exact_query_us": 118.63850022564293,
     "n_train_events": 6000,
     "nn_bytes_dense": 24576000,
     "nn_bytes_packed": 768000,
-    "nn_query_us": 890.3704999738693,
+    "nn_query_us": 794.3499999782944,
     "ns_index_bytes": 40174,
-    "ns_query_us": 116.4819999530664
+    "ns_query_us": 190.6335000967374
    },
    "masks": {
     "0.0": {
@@ -567,17 +567,17 @@
    "seed": 1
   },
   {
-   "build_s": 2.3570082910000565,
+   "build_s": 2.694840206000663,
    "concepts_covered": 40,
    "cost": {
     "exact_bytes": 48000,
-    "exact_query_us": 119.23900001420407,
+    "exact_query_us": 117.47999997169245,
     "n_train_events": 6000,
     "nn_bytes_dense": 24576000,
     "nn_bytes_packed": 768000,
-    "nn_query_us": 801.4320000029329,
+    "nn_query_us": 793.8455000839895,
     "ns_index_bytes": 35470,
-    "ns_query_us": 117.52550005894591
+    "ns_query_us": 123.20849964453373
    },
    "masks": {
     "0.0": {
@@ -690,17 +690,17 @@
    "seed": 2
   },
   {
-   "build_s": 2.3895518530000572,
+   "build_s": 2.818231903999731,
    "concepts_covered": 40,
    "cost": {
     "exact_bytes": 48000,
-    "exact_query_us": 228.4529999769802,
+    "exact_query_us": 173.38200041194796,
     "n_train_events": 6000,
     "nn_bytes_dense": 24576000,
     "nn_bytes_packed": 768000,
-    "nn_query_us": 913.4594999977708,
+    "nn_query_us": 991.2175005410973,
     "ns_index_bytes": 38060,
-    "ns_query_us": 118.11199999556266
+    "ns_query_us": 117.29100015145377
    },
    "masks": {
     "0.0": {
@@ -813,17 +813,17 @@
    "seed": 3
   },
   {
-   "build_s": 2.772965876000171,
+   "build_s": 2.8513508149999325,
    "concepts_covered": 40,
    "cost": {
     "exact_bytes": 48000,
-    "exact_query_us": 126.05999995685124,
+    "exact_query_us": 116.11250010901131,
     "n_train_events": 6000,
     "nn_bytes_dense": 24576000,
     "nn_bytes_packed": 768000,
-    "nn_query_us": 748.6345001552763,
+    "nn_query_us": 892.0805003072019,
     "ns_index_bytes": 41532,
-    "ns_query_us": 187.55050007257523
+    "ns_query_us": 120.21399970763014
    },
    "masks": {
     "0.0": {
