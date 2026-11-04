@@ -7,3 +7,4 @@ __pycache__/
 results/dev/
 neurostore_results/
 neurostore_cross_hardware_combined.csv
+data/
