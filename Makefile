@@ -1,7 +1,7 @@
 PY ?= python3
 export PYTHONPATH := src:.
 
-.PHONY: test bench report clean
+.PHONY: test bench report clean colab-build colab-validate colab-review
 test:
 	$(PY) -m pytest
 
@@ -14,3 +14,16 @@ report:
 
 clean:
 	rm -rf .pytest_cache .hypothesis __pycache__
+
+# ---- Colab notebook (colab/): sources in colab/src/*.py -> colab/NeuroStore_Colab_Benchmarks_v2.ipynb
+# colab-validate and colab-review need jax, nbclient, ipykernel, pandas, matplotlib in $(COLAB_PY); the static tests in `make test` do not.
+COLAB_PY ?= $(PY)
+colab-build:
+	$(PY) colab/build_notebook.py
+
+colab-validate: colab-build
+	$(COLAB_PY) colab/validate_v2.py --runs smoke multidev
+
+colab-review:
+	$(COLAB_PY) colab/review_experiments.py
+	$(PY) colab/make_review.py
