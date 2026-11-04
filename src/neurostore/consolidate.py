@@ -36,7 +36,24 @@ class Consolidator:
         s.since_round = 0
         self.rounds += 1; self.replayed += len(pos)
 
-    def _synapses(self, pos, units, st):
+    def learn_online(self, pos):
+        """Ablation 'no consolidation': learn from every stored event immediately (batch of one), with no hot
+        selection, no replay budget and no batching. Epoch bookkeeping (tick, merge, assembly maintenance) still
+        happens once every consolidate_every events so lambda keeps the same meaning."""
+        s, cfg = self.s, self.s.cfg
+        units, st, _ = s.log.gather(np.array([pos]))
+        if s.asm is not None:
+            s.asm.learn(units[0])
+        self._synapses(np.array([pos]), units, st, tick=False)
+        self.online_n = getattr(self, 'online_n', 0) + 1
+        if self.online_n % cfg.consolidate_every == 0:
+            if s.lattice is not None:
+                s.lattice.tick(); s.lattice.merge()
+            if s.asm is not None:
+                s.asm.maintain()
+            self.rounds += 1
+
+    def _synapses(self, pos, units, st, tick=True):
         """Hebbian update w_ij += eta * a_i * a_j * K(dt) for the replayed events, written to the
         lattice's delta buffers. a = stored strength/255. Within-event pairs have dt = 0 (K = 1, both
         directions); pre-before-post pairs use the previous stored events inside lag_window with
@@ -46,7 +63,8 @@ class Consolidator:
         if lat is None or not len(pos):
             return
         N, B = cfg.N, len(pos)
-        lat.tick()
+        if tick:
+            lat.tick()
         A = np.zeros((B, N), np.float32)
         A[np.arange(B)[:, None], units] = st.astype(np.float32) / 255.0
         inc = A.T @ A if cfg.within_event else np.zeros((N, N), np.float32)
@@ -70,5 +88,5 @@ class Consolidator:
         inc *= cfg.eta; incdt *= cfg.eta
         pre, post = np.nonzero(inc > 0)
         lat.add_delta(pre, post, inc[pre, post], incdt[pre, post])
-        if self.rounds % cfg.merge_every == cfg.merge_every - 1:
+        if tick and self.rounds % cfg.merge_every == cfg.merge_every - 1:
             lat.merge()

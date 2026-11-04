@@ -39,6 +39,12 @@ class AoSStore(SpikeStore):
     def times(self):
         return self.rows["t"][:self.n * self.k:self.k].astype(np.float32)
 
+    def eids_at(self, idx):
+        return self.rows["eid"][np.asarray(idx, np.int64) * self.k].astype(np.uint32)
+
+    def times_at(self, idx):
+        return self.rows["t"][np.asarray(idx, np.int64) * self.k].astype(np.float32)
+
     def _chunks(self, field):
         name = "unit" if field == "unit" else field
         yield 0, self.rows[name][:self.n * self.k]

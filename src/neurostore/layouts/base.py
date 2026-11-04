@@ -39,12 +39,34 @@ class SpikeStore:
     def field_sum(self, field: str) -> int:
         return int(sum(int(a.sum(dtype=np.int64)) for _, a in self._chunks(field)))
 
+    def eids_at(self, idx):
+        raise NotImplementedError
+
+    def times_at(self, idx):
+        raise NotImplementedError
+
     def unit_history(self, u: int):
-        """(event_ids, times) of every event in which unit u fired (full scan)."""
+        """(event_ids, times) of every event in which unit u fired (full scan, no index)."""
         pos = [np.flatnonzero(a == u) + off for off, a in self._chunks("unit")]
         pos = np.concatenate(pos) if pos else np.zeros(0, np.int64)
         ev = pos // self.k
-        return self.event_ids()[ev], self.times()[ev]
+        return self.eids_at(ev), self.times_at(ev)
+
+    # ---- postings: unit-major lists, rebuilt from sealed data by compaction
+    def build_postings(self):
+        units = np.concatenate([a for _, a in self._chunks("unit")]) if self.n else np.zeros(0, "<u2")
+        order = np.argsort(units, kind="stable")
+        self._pp_ptr = np.concatenate([[0], np.cumsum(np.bincount(units, minlength=65536))]).astype(np.int64)
+        self._pp_rows = order.astype(np.int32)          # spike row ids (log order within a unit)
+        self._pp_n = self.n
+
+    def unit_history_indexed(self, u: int):
+        rows = self._pp_rows[self._pp_ptr[u]:self._pp_ptr[u + 1]].astype(np.int64)
+        ev = rows // self.k
+        return self.eids_at(ev), self.times_at(ev)
+
+    def postings_nbytes(self) -> int:
+        return int(self._pp_rows.nbytes + self._pp_ptr.nbytes)
 
     def nbytes(self) -> int:
         """logical bytes of the filled portion"""

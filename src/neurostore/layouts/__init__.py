@@ -2,8 +2,11 @@ from .base import SpikeStore
 from .aos import AoSStore
 from .soa import SoAStore
 from .volley import VolleyStore
+from .csr import CSRGraph
+from .dictgraph import DictGraph
 
 SPIKE_LAYOUTS = ("aos", "soa", "soa_event", "volley")
+GRAPH_LAYOUTS = ("csr", "dict")
 
 
 def make_store(name: str, k: int, **kw) -> SpikeStore:

@@ -61,7 +61,9 @@ class NeuroStore:
                     self.asm.wmatch[b] += 1
                     if self.asm.wmatch[b] >= cfg.repeat_hot:
                         hot, prio = True, prio + 0.1
-            if hot:
+            if cfg.consolidate == "online":
+                self.cons.learn_online(pos)
+            elif hot:
                 self.hot.append((prio, pos))
         self.prev_units, self.prev_cos = units, cos
         self.s_hist.append(S)

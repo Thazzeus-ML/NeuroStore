@@ -54,6 +54,14 @@ class SoAStore(SpikeStore):
     def times(self):
         return (self.t[:self.n] if self.normalized else self.t[:self.n * self.k:self.k]).astype(np.float32)
 
+    def eids_at(self, idx):
+        i = np.asarray(idx, np.int64)
+        return self.eid[i if self.normalized else i * self.k].astype(np.uint32)
+
+    def times_at(self, idx):
+        i = np.asarray(idx, np.int64)
+        return self.t[i if self.normalized else i * self.k].astype(np.float32)
+
     def _chunks(self, field):
         a = {"unit": self.unit, "strength": self.st, "surprise": self.su}[field]
         yield 0, a[:self.n * self.k]

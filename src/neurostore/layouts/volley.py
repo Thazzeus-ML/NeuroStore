@@ -49,6 +49,39 @@ class VolleyStore(SpikeStore):
             su[m] = sl["su"].reshape(-1, self.k)[loc[m]]
         return u, st, su
 
+    def _gather_hdr(self, name, idx):
+        idx = np.asarray(idx, np.int64); out = np.empty(len(idx), self.slabs[0][name].dtype if self.slabs else "f4")
+        s_of, loc = idx // self.SV, idx % self.SV
+        for s in np.unique(s_of):
+            m = s_of == s
+            out[m] = self.slabs[s][name].reshape(-1)[loc[m]]
+        return out
+
+    def eids_at(self, idx):
+        return self._gather_hdr("eid", idx).astype(np.uint32)
+
+    def times_at(self, idx):
+        return self._gather_hdr("t", idx).astype(np.float32)
+
+    def build_postings(self):
+        """unit-major lists of (tile, slot): tile = global tile id (int32), slot = v*k + j within the tile (uint16)"""
+        flat = np.concatenate([a for _, a in self._chunks("unit")]) if self.n else np.zeros(0, "<u2")
+        order = np.argsort(flat, kind="stable")
+        self._pp_ptr = np.concatenate([[0], np.cumsum(np.bincount(flat, minlength=65536))]).astype(np.int64)
+        rows = order.astype(np.int64)
+        ev, j = rows // self.k, rows % self.k
+        self._pp_tile = (ev // self.V).astype(np.int32)
+        self._pp_slot = ((ev % self.V) * self.k + j).astype(np.uint16)
+        self._pp_n = self.n
+
+    def unit_history_indexed(self, u):
+        s, e = self._pp_ptr[u], self._pp_ptr[u + 1]
+        ev = self._pp_tile[s:e].astype(np.int64) * self.V + self._pp_slot[s:e].astype(np.int64) // self.k
+        return self.eids_at(ev), self.times_at(ev)
+
+    def postings_nbytes(self):
+        return int(self._pp_tile.nbytes + self._pp_slot.nbytes + self._pp_ptr.nbytes)
+
     def _flat(self, name):
         out = []
         for s, sl in enumerate(self.slabs):
