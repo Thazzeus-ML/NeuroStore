@@ -1,4 +1,5 @@
-# NeuroStore (research prototype)
+# NeuroStore
+Empirical Evaluation of a Neural-Coding Data Architecture
 
 Events as sparse, timestamped activity over feature units; meaning in learned weights. See `REPORT.md` for results,
 `DECISIONS.md` for every design choice, `gates.toml` for the pre-registered gates.
