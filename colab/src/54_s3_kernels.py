@@ -3,8 +3,8 @@
 #
 # v1 set a global `highest` matmul precision. For ±1 data that is unnecessary: every product is ±1 and every partial
 # sum is an integer far below 2²⁴, so bf16 or int8 inputs with a wide accumulator give *bit-identical* scores. On
-# hardware where `highest` costs several passes (TPU) or disables TF32 (GPU) this changes throughput materially. This
-# section measures that instead of assuming it.
+# hardware where `highest` costs several passes (TPU) or disables TF32 (GPU) it may change throughput materially. This
+# section measures that on whatever backend runs it, and checks exactness, instead of assuming either.
 #
 # | variant | inputs | accumulate | notes |
 # |---|---|---|---|

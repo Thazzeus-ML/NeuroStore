@@ -94,13 +94,22 @@ def tpr_at_threshold(pos, thr):
     return float(np.mean(np.asarray(pos) >= thr))
 
 
+_LG_CACHE = {}
+
+
+def _lgamma_table(n):
+    if n not in _LG_CACHE:
+        _LG_CACHE[n] = np.array([math.lgamma(i + 1) for i in range(n + 1)])
+    return _LG_CACHE[n]
+
+
 def _binom_pmf(n, p):
     k = np.arange(n + 1)
     if p <= 0.0:
         out = np.zeros(n + 1); out[0] = 1.0; return out
     if p >= 1.0:
         out = np.zeros(n + 1); out[n] = 1.0; return out
-    lg = np.array([math.lgamma(i + 1) for i in range(n + 1)])
+    lg = _lgamma_table(n)
     return np.exp(lg[n] - lg[k] - lg[n - k] + k * math.log(p) + (n - k) * math.log1p(-p))
 
 
@@ -146,7 +155,9 @@ def vsa_bundle_corr(k):
     """
     if k % 2 != 1:
         raise ValueError("k must be odd")
-    return math.comb(k - 1, (k - 1) // 2) / 2.0 ** (k - 1)
+    if k <= 1000:                                   # exact integers / float powers stay in range
+        return math.comb(k - 1, (k - 1) // 2) / 2.0 ** (k - 1)
+    return math.exp(math.lgamma(k) - 2.0 * math.lgamma((k + 1) / 2.0) - (k - 1) * math.log(2.0))
 
 
 def analytic_vsa_decode(D, n_fillers, k):

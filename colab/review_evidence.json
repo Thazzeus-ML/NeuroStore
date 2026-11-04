@@ -285,43 +285,43 @@
  ],
  "E6_percentile_reliability_cpu": {
   "p95_from_8_samples": {
-   "reference_from_2000_samples_ms": 0.93817695004077,
-   "estimate_median_ms": 0.849737774998971,
-   "estimate_p5_ms": 0.7296445075621705,
-   "estimate_p95_ms": 1.171014744980141,
-   "ratio_p95_over_p5": 1.6049113408564415
+   "reference_from_2000_samples_ms": 0.9870349501852614,
+   "estimate_median_ms": 0.9098387999301849,
+   "estimate_p5_ms": 0.7935627776771526,
+   "estimate_p95_ms": 1.305229630070241,
+   "ratio_p95_over_p5": 1.644771739282927
   },
   "p99_from_8_samples": {
-   "reference_from_2000_samples_ms": 1.1915964599529616,
-   "estimate_median_ms": 0.8726313549743736,
-   "estimate_p5_ms": 0.7342883289759925,
-   "estimate_p95_ms": 1.2734967890356186,
-   "ratio_p95_over_p5": 1.7343279727890861
+   "reference_from_2000_samples_ms": 1.2755884498665182,
+   "estimate_median_ms": 0.9368055499362526,
+   "estimate_p5_ms": 0.8065607782129973,
+   "estimate_p95_ms": 1.5661805072081731,
+   "ratio_p95_over_p5": 1.9418009770797147
   },
   "p95_from_20_samples": {
-   "reference_from_2000_samples_ms": 0.93817695004077,
-   "estimate_median_ms": 0.8886569249938248,
-   "estimate_p5_ms": 0.7851292624863504,
-   "estimate_p95_ms": 1.1024441500751436,
-   "ratio_p95_over_p5": 1.404156236113171
+   "reference_from_2000_samples_ms": 0.9870349501852614,
+   "estimate_median_ms": 0.9453445001440741,
+   "estimate_p5_ms": 0.8454289049768705,
+   "estimate_p95_ms": 1.1932279726556771,
+   "ratio_p95_over_p5": 1.41138771767961
   },
   "p99_from_20_samples": {
-   "reference_from_2000_samples_ms": 1.1915964599529616,
-   "estimate_median_ms": 0.958168145007221,
-   "estimate_p5_ms": 0.8127919855446066,
-   "estimate_p95_ms": 1.5974723880926243,
-   "ratio_p95_over_p5": 1.96541355783946
+   "reference_from_2000_samples_ms": 1.2755884498665182,
+   "estimate_median_ms": 1.0122780149663413,
+   "estimate_p5_ms": 0.8797404024905973,
+   "estimate_p95_ms": 2.296776155736777,
+   "ratio_p95_over_p5": 2.610743066061838
   },
   "example_8_samples": {
-   "p50": 0.6155334999675688,
-   "p95": 0.762370750038599,
-   "p99": 0.7702429500284325,
-   "max": 0.7722110000258908
+   "p50": 0.7075295002323401,
+   "p95": 0.8099520001906058,
+   "p99": 0.8193712001502718,
+   "max": 0.8217260001401883
   }
  },
  "E7_launch_bound": {
-  "empty_jit_call_p50_us_this_machine": 8.953500014285964,
-  "empty_jit_call_p99_us_this_machine": 47.21918998484398,
+  "empty_jit_call_p50_us_this_machine": 8.686999990459299,
+  "empty_jit_call_p99_us_this_machine": 34.890849856310524,
   "workloads": [
    {
     "profile": "quick",
@@ -375,10 +375,10 @@
    }
   ],
   "original_cpu_batch_p50_ms": {
-   "exact_flat_n128_noise0.25": 0.457,
-   "hopfield_cleanup_n128_noise0.25": 1.11,
-   "exact_flat_n512_noise0.25": 0.629,
-   "hopfield_cleanup_n512_noise0.25": 1.669
+   "exact_flat_n128_noise0.25": 0.412,
+   "hopfield_cleanup_n128_noise0.25": 1.325,
+   "exact_flat_n512_noise0.25": 0.682,
+   "hopfield_cleanup_n512_noise0.25": 1.768
   }
  },
  "E8_seed_derivation": {
@@ -506,30 +506,30 @@
   "M=1024": {
    "counters_identical": true,
    "reads_identical": true,
-   "build_dense_ms": 6.119491000049493,
-   "build_scatter_ms": 5.389377000028617,
-   "read_dense_ms": 4.735704000040641,
-   "read_gather_ms": 4.549698999994689,
+   "build_dense_ms": 7.670383000004222,
+   "build_scatter_ms": 6.831890999819734,
+   "read_dense_ms": 7.6716799999303475,
+   "read_gather_ms": 6.727840000166907,
    "dense_mask_bytes": 1638400
   },
   "M=8192": {
    "counters_identical": true,
    "reads_identical": true,
-   "build_dense_ms": 26.84905000000981,
-   "build_scatter_ms": 18.08815100002903,
-   "read_dense_ms": 22.689181000032477,
-   "read_gather_ms": 16.232037999998283,
+   "build_dense_ms": 25.248349999856146,
+   "build_scatter_ms": 18.90631000014764,
+   "read_dense_ms": 23.095711000223673,
+   "read_gather_ms": 16.226623999955336,
    "dense_mask_bytes": 13107200
   },
   "M=32768": {
    "counters_identical": true,
    "reads_identical": true,
-   "build_dense_ms": 166.4016670000592,
-   "build_scatter_ms": 90.03781100000197,
-   "read_dense_ms": 146.36954800005242,
-   "read_gather_ms": 67.41133399998489,
+   "build_dense_ms": 137.3230459998922,
+   "build_scatter_ms": 91.72534100025587,
+   "read_dense_ms": 129.40901799993298,
+   "read_gather_ms": 81.57675199981895,
    "dense_mask_bytes": 52428800
   }
  },
- "runtime_s": 31.290657997131348
+ "runtime_s": 27.732009172439575
 }

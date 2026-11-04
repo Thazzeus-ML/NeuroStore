@@ -2,8 +2,9 @@
 # ## 8. Out-of-distribution rejection
 #
 # In v1 the OOD queries were independent random vectors; they score about 0.12 maximum cosine against the memory while a
-# 25 %-noise known query scores about 0.5, a gap of roughly nine standard deviations, so AUROC = 1.0 for *any* sensible
-# score and the test could not fail. v2 uses families that are progressively harder, and four scores:
+# 25 %-noise known query scores about 0.5 (in a 10,000-query check even the worst known query, 0.35, beat the best random
+# OOD query, 0.21), so AUROC = 1.0 for *any* sensible score and the test could not fail. v2 uses families that are
+# progressively harder, and four scores:
 #
 # | family | construction | expected behaviour |
 # |---|---|---|

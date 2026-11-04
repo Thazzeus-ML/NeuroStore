@@ -127,13 +127,13 @@ if RUN_SDM:
     fig, axes = plt.subplots(1, 3, figsize=(16, 3.9))
     for (M, K), g in cap[(cap.noise == 0) & (cap.read_iters == 1)].groupby(["hard_locations", "k_active"]):
         g = g.sort_values("n")
-        axes[0].errorbar(g.n, g.exact_pattern_recall, yerr=yerr(g.exact_pattern_recall, g.exact_pattern_recall_lo, g.exact_pattern_recall_hi), marker="o", ms=3, capsize=1.5, label=f"M={M} K={K}")
+        axes[0].errorbar(g.n, g.exact_pattern_recall, yerr=yerr(g.exact_pattern_recall, g.exact_pattern_recall_lo, g.exact_pattern_recall_hi), marker="o", ms=3, capsize=1.5, label=f"M={int(M)} K={int(K)}")
     fl = cap[(cap.noise == 0)].sort_values("n").drop_duplicates("n")
     axes[0].plot(fl.n, fl.flat_search_recall_analytic, "k--", lw=1, label="flat search (analytic)")
     axes[0].set(xscale="log", xlabel="stored patterns", ylabel="exact whole-pattern recall", title="SDM capacity (noise-free cue)"); axes[0].legend(fontsize=6); axes[0].grid(alpha=.25)
     nz = [x for x in P["sdm_noise"] if x > 0][-1]
     for (M, K), g in cap[(cap.noise == nz) & (cap.read_iters == 1)].groupby(["hard_locations", "k_active"]):
-        g = g.sort_values("n"); axes[1].plot(g.n, g.bit_error_rate_out, "o-", ms=3, label=f"M={M} K={K}")
+        g = g.sort_values("n"); axes[1].plot(g.n, g.bit_error_rate_out, "o-", ms=3, label=f"M={int(M)} K={int(K)}")
     axes[1].axhline(nz, color="k", ls="--", lw=1, label="input BER"); axes[1].set(xscale="log", xlabel="stored patterns", ylabel="output bit-error rate", title=f"denoising at {int(nz * 100)}% input noise (single read)")
     axes[1].legend(fontsize=6); axes[1].grid(alpha=.25)
     im = results_df("sdm_impl")
@@ -141,6 +141,8 @@ if RUN_SDM:
         g = im[im.method == name].sort_values("hard_locations")
         axes[2].plot(g.hard_locations, g.read_pipe_ms, "o-", label=f"read {name}"); axes[2].plot(g.hard_locations, g.write_pipe_ms, "s--", label=f"write {name}")
     axes[2].set(xscale="log", yscale="log", xlabel="hard locations M", ylabel="pipelined ms", title="implementation cost"); axes[2].legend(fontsize=7); axes[2].grid(alpha=.25, which="both")
+    for a in axes[:2]:
+        a.set_xticks(P["sdm_loads"]); a.set_xticklabels([str(x) for x in P["sdm_loads"]]); a.minorticks_off()
     plt.tight_layout(); savefig(fig, "s7_sdm"); plt.show()
 else:
     print("SDM study disabled.")

@@ -70,7 +70,7 @@ def build_values():
     V["fly_bin_40"] = f"{rec['0.4']['binary_pm1_over_sqrt16 (original)']:.2f}"; V["fly_gauss_40"] = f"{rec['0.4']['gaussian_weights (continuous activations)']:.2f}"
     e13 = EV["E13_bipolar_host_memory_gb"]; V["bip_gb_2e20"] = f"{e13['n=1048576']:.1f}"
     e14 = EV["E14_sdm_dense_vs_scatter"]; big = e14["M=32768"]
-    V["sdm_equal"] = all(v["counters_identical"] and v["reads_identical"] for v in e14.values())
+    V["sdm_equal"] = "yes" if all(v["counters_identical"] and v["reads_identical"] for v in e14.values()) else "NO"
     V["sdm_write_x"] = f"{big['build_dense_ms'] / big['build_scatter_ms']:.1f}"; V["sdm_read_x"] = f"{big['read_dense_ms'] / big['read_gather_ms']:.1f}"
     V["sdm_mask_mb"] = f"{big['dense_mask_bytes'] / 1e6:.0f}"
     V["evidence_runtime"] = f"{EV['runtime_s']:.0f}"
@@ -87,9 +87,10 @@ def build_values():
     V["multidev_devices"] = r["environment"]["local_device_count"] if r else "n/a"
     r = RUN.get("quick") or RUN.get("smoke")
     V["v2_experiments"] = len(r["experiments"]) if r else "n/a"; V["v2_columns"] = r["columns"] if r else "n/a"
-    V["checks_list"] = "\n".join(f"| {c['name']} | {'PASS' if c['ok'] else 'FAIL'} |" for c in (RUN.get("multidev") or RUN.get("smoke") or {"checks": []})["checks"])
+    V["checks_list"] = "\n".join(f"| {c['name'].replace('|', '\\|')} | {'PASS' if c['ok'] else 'FAIL'} |" for c in (RUN.get("multidev") or RUN.get("smoke") or {"checks": []})["checks"])
     V["quick_findings"] = "\n".join(f"- {f}" for f in (RUN.get("quick") or {"findings": []})["findings"])
     V["env_jax"] = (r or {}).get("environment", {}).get("jax", V["jax"]); V["env_numpy"] = (r or {}).get("environment", {}).get("numpy", "")
+    V["env_python"] = (r or {}).get("environment", {}).get("python", "")
     return V
 
 

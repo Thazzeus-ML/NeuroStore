@@ -1,5 +1,5 @@
 """Static checks of the Colab notebook sources (no JAX needed) and an optional end-to-end smoke run (needs JAX + nbclient)."""
-import ast, json, re, subprocess, sys
+import ast, io, json, re, subprocess, sys, tokenize
 from pathlib import Path
 import pytest
 
@@ -9,6 +9,44 @@ import nbtools  # noqa: E402
 
 CELLS = nbtools.load_pct(ROOT / "colab" / "src")
 CODE = "\n".join(c["source"] for c in CELLS if c["kind"] == "code")
+
+
+def fstring_portability_issues(src):
+    """Constructs that only parse on Python 3.12+ (Colab often runs 3.10-3.12): an f-string reusing its own quote character inside
+    a replacement field, a backslash inside one, or a comment inside one. Uses the 3.12+ tokenizer, so it must be run on 3.12+."""
+    issues, stack = [], []
+
+    def quote_of(tok):
+        tok = tok.lstrip("rRbBuUfF")
+        return tok[:3] if tok[:3] in ('"""', "'''") else tok[:1]
+
+    for t in tokenize.generate_tokens(io.StringIO(src).readline):
+        if t.type == tokenize.FSTRING_START:
+            q = quote_of(t.string)
+            if stack and stack[-1] == q:
+                issues.append((t.start[0], "nested f-string reuses the enclosing quote"))
+            stack.append(q)
+        elif t.type == tokenize.FSTRING_END:
+            stack.pop()
+        elif stack and t.type == tokenize.STRING:
+            if quote_of(t.string) == stack[-1]:
+                issues.append((t.start[0], "string inside a replacement field reuses the enclosing quote"))
+            if "\\" in t.string:
+                issues.append((t.start[0], "backslash inside a replacement field"))
+        elif stack and t.type == tokenize.COMMENT:
+            issues.append((t.start[0], "comment inside a replacement field"))
+    return issues
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="needs the 3.12+ tokenizer to see f-string structure")
+def test_fstring_checker_catches_known_bad_patterns_and_notebook_is_clean():
+    bad = ['x = f"{d["k"]}"\n', "y = f'{a[\'k\']}'\n", 'z = f"{f"{1}"}"\n']
+    for src in bad:
+        assert fstring_portability_issues(src), src
+    assert not fstring_portability_issues('x = f"{d[\'k\']} and {n:.2f}"\n')
+    for c in CELLS:
+        if c["kind"] == "code":
+            assert not fstring_portability_issues(c["source"]), (c["id"], fstring_portability_issues(c["source"]))
 
 
 def test_every_code_cell_parses_and_ids_are_unique():

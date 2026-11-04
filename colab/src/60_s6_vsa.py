@@ -11,7 +11,10 @@
 # **B. Bundle-decode capacity.** Unbind one role from a bundle of `k` role–filler pairs and clean up against a codebook of `F`
 # fillers. A majority bundle of `k` terms correlates with each term by `C(k-1,(k-1)/2)/2^(k-1)`, which makes decoding
 # equivalent to flat retrieval with an effective flip probability `(1-c_k)/2`; the closed form from Section A of the helpers
-# therefore predicts decode accuracy for every `(D, k)`, and the measurements must agree with it.
+# therefore predicts decode accuracy for every `(D, k)`, and the measurements must agree with it. The bundle sizes probed
+# for each dimension are *derived from that closed form* (the sizes at which accuracy should be 99.5 %, 97 %, 90 %, 70 %, 50 %
+# and 30 %), so every dimension is measured through its own transition region instead of at a fixed k where large D is
+# trivially perfect.
 
 # %% id=s6-code
 #@title 6. VSA: record retrieval and bundle-decode capacity
@@ -35,11 +38,14 @@ def vsa_make_records(rng, d, n_rec):
     return fields, rec, cue
 
 
-@partial(jax.jit, static_argnames=("k",))
-def vsa_bundle(roles, codebook, idx, k):
-    acc = jnp.zeros((idx.shape[0], roles.shape[1]), jnp.int32)
-    for j in range(k):
-        acc = acc + roles[j][None, :].astype(jnp.int32) * codebook[idx[:, j]].astype(jnp.int32)
+@jax.jit
+def vsa_bundle(roles, codebook, idx):
+    """sign(sum_j role_j * filler[idx[:, j]]) for k = roles.shape[0] terms (k odd: never zero). A rolled loop keeps compile time flat in k."""
+    def body(j, acc):
+        r = lax.dynamic_index_in_dim(roles, j, axis=0, keepdims=False).astype(jnp.int32)
+        ids = lax.dynamic_index_in_dim(idx, j, axis=1, keepdims=False)
+        return acc + r[None, :] * codebook[ids].astype(jnp.int32)
+    acc = lax.fori_loop(0, roles.shape[0], body, jnp.zeros((idx.shape[0], roles.shape[1]), jnp.int32))
     return jnp.where(acc >= 0, 1.0, -1.0)
 
 
@@ -47,6 +53,20 @@ def vsa_bundle(roles, codebook, idx, k):
 def vsa_decode_first(bundle, role0, codebook):
     u = bundle * role0[None, :].astype(jnp.float32)
     return jnp.argmax(jnp.matmul(u, codebook.astype(jnp.float32).T, precision=HI), axis=1)
+
+
+def vsa_k_for_accuracy(dd, n_fillers, target, k_max=4001):
+    """Smallest odd bundle size at which the closed-form decode accuracy falls to `target` (accuracy decreases with k); bisection."""
+    lo, hi = 0, (k_max - 1) // 2                       # k = 2m + 1
+    if analytic_vsa_decode(dd, n_fillers, 2 * hi + 1) > target:
+        return 2 * hi + 1
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if analytic_vsa_decode(dd, n_fillers, 2 * mid + 1) > target:
+            lo = mid + 1
+        else:
+            hi = mid
+    return 2 * lo + 1
 
 
 if RUN_VSA:
@@ -74,13 +94,16 @@ if RUN_VSA:
     # ---------------- B. decode capacity vs bundle size and dimension
     F = 64
     for dd in P["vsa_dims"]:
-        for k in P["vsa_ks"]:
+        # k grid chosen from the analytic model so every dimension is probed from ~perfect to ~failing decode
+        ks = sorted({1, 5} | {vsa_k_for_accuracy(dd, F, t) for t in P["vsa_targets"]})
+        print(f"D={dd}: bundle sizes {ks}")
+        for k in ks:
             correct = []
             for si in SEEDS:
                 r = rng_for(6, 1, dd, k, si)
                 roles = bipolar_i8(k, dd, r); codebook = bipolar_i8(F, dd, r)
                 idx = r.integers(0, F, size=(P["vsa_trials"], k)).astype(np.int32)
-                bundle = vsa_bundle(put(roles), put(codebook), put(idx), k)
+                bundle = vsa_bundle(put(roles), put(codebook), put(idx))
                 correct.append(np.asarray(vsa_decode_first(bundle, put(roles[0]), put(codebook))) == idx[:, 0])
             r1, lo, hi, trials = pooled_recall(correct)
             ana = analytic_vsa_decode(dd, F, k)
@@ -91,6 +114,7 @@ if RUN_VSA:
     viol = vd[abs(vd.recall_at_1 - vd.analytic_recall) > 4.5 * np.sqrt(np.maximum(vd.analytic_recall * (1 - vd.analytic_recall), 1e-12) / vd.trials) + 1.0 / vd.trials]
     check("S6 VSA decode accuracy matches the closed-form prediction for every (D, k)", len(viol) == 0, f"{len(vd)} cells, {len(odd)} informative; violations: {len(viol)}")
     print(vd.pivot_table(index="bundle_terms", columns="d", values="recall_at_1").round(3).to_string())
+    print("(NaN = that bundle size was not probed for that dimension; grids are dimension specific)")
     fig, axes = plt.subplots(1, 2, figsize=(12, 3.9))
     for dd in P["vsa_dims"]:
         g = vd[vd.d == dd].sort_values("bundle_terms")

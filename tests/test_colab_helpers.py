@@ -103,6 +103,15 @@ def test_vsa_bundle_corr_matches_simulation():
         H["vsa_bundle_corr"](4)
 
 
+def test_vsa_bundle_corr_is_finite_and_smooth_for_large_k():
+    f = H["vsa_bundle_corr"]
+    assert abs(f(1001) - f(999) * (999 / 1001) ** 0.5) < 1e-4                     # continuous across the exact/log-space switch
+    for k in (1001, 1501, 4001):
+        c = f(k)
+        assert 0 < c < 1 and abs(c - math.sqrt(2 / (math.pi * k))) / c < 0.01        # Stirling: c_k ~ sqrt(2/(pi k))
+    assert 0 < H["analytic_vsa_decode"](8192, 64, 1501) < 1
+
+
 def test_ideal_sparse_code_bytes_and_slope():
     assert H["ideal_sparse_code_bytes"](8, 1) == pytest.approx(3 / 8)
     assert H["loglog_slope"]([1, 2, 4, 8], [3, 6, 12, 24]) == pytest.approx(1.0)

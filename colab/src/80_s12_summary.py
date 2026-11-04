@@ -76,7 +76,8 @@ def f_fly():
     fv = df[df.experiment == "fly_vs_simhash"]; n0 = fv.n.min(); nz = min(fv.noise.unique(), key=lambda x: abs(x - 0.30))
     g = fv[(fv.n == n0) & (fv.noise == nz)].set_index("method")
     say(f"FlyHash vs controls at N={int(n0)}, {nz:.0%} flips: " + ", ".join(f"{m} {g.loc[m, 'recall_at_1']:.3f}" for m in g.index) +
-        f". Sizes: raw input {D / 8:.0f} B; v1 FlyHash code ideal {g[g.index.str.contains('v1')].ideal_bytes.iloc[0]:.0f} B.")
+        f". v1 FlyHash code: bitmap {g[g.index.str.contains('v1')].bitmap_bytes.iloc[0]:.0f} B, index list {g[g.index.str.contains('v1')].index_list_bytes.iloc[0]:.0f} B, "
+        f"entropy bound {g[g.index.str.contains('v1')].ideal_bytes.iloc[0]:.0f} B, against {D / 8:.0f} B for the raw input.")
 
 
 def f_vsa():
@@ -131,8 +132,14 @@ def claim(text, status, evidence):
 nr = df[df.experiment == "noisy_recall"]
 if len(nr):
     hp = nr[nr.method == "hopfield_cleanup"]
-    sig = hp[(hp.mcnemar_p < 0.05)]
-    claim("Hopfield cleanup retrieves as well as exact flat search", "supported only where both are saturated; exact search is better in the informative cells" if len(sig) else "no detectable difference at this sample size",
+    sig = hp[hp.mcnemar_p < 0.05]
+    if len(sig) == 0:
+        status = "no detectable difference at this sample size"
+    elif (sig.paired_diff_vs_exact < 0).all():
+        status = "no: exact search is significantly better in every cell where they differ"
+    else:
+        status = "mixed: significant differences in both directions"
+    claim("Hopfield cleanup retrieves as well as exact flat search", status,
           f"{len(sig)}/{len(hp)} (N, noise) cells have a significant paired difference (McNemar p<0.05); Section 1")
 if CHECKS:
     ok = {c["name"]: c["ok"] for c in CHECKS}
@@ -141,10 +148,18 @@ if CHECKS:
         claim("bf16 / int8 / bit-packed kernels give the same exact-search answers as fp32 on +-1 data", "supported on this runtime" if all(k_ok) else "NOT supported on this runtime", "Section 3 optimal_rate == 1 for all exact kernels")
 sc = df[df.experiment == "scaling_N"]
 if len(sc):
-    lb = float((sc.lat_p50_ms < 5 * DISPATCH_FLOOR_MS).mean())
-    claim("Timings at v1's sizes (N <= 2048, Q <= 256) characterise accelerator throughput", "no" if BACKEND != "cpu" else "n/a on CPU", f"{lb:.0%} of N-sweep rows are launch-bound here; Section 4")
-if len(df[df.experiment == "fly_vs_simhash"]):
-    claim("FlyHash-style codes are more compact than the data they encode", "no for this projection", "the ideal k-of-m code size exceeds the D-bit raw input in the v1 configuration; Section 5")
+    lbf = lambda g: float((g.lat_p50_ms < 5 * DISPATCH_FLOOR_MS).mean()) if len(g) else NAN
+    small, large = lbf(sc[sc.n <= 2048]), lbf(sc[sc.n > 2048])
+    claim("Timings at v1's sizes (N <= 2048, Q <= 256) characterise accelerator throughput",
+          "n/a on a CPU runtime" if BACKEND == "cpu" else ("no: mostly launch-bound" if small >= 0.5 else "partly"),
+          f"rows within 5x of the dispatch floor: {small:.0%} at N<=2048 vs {large:.0%} at larger N (NaN: none); Section 4")
+fv_ = df[df.experiment == "fly_vs_simhash"]
+if len(fv_):
+    fr = fv_[fv_.method.str.startswith("fly")].drop_duplicates("method")
+    raw_b = D / 8
+    idx_smaller = fr[fr.index_list_bytes < raw_b].method.tolist(); ideal_smaller = fr[fr.ideal_bytes < raw_b].method.tolist()
+    claim("FlyHash-style codes are more compact than the raw input", "no for practical encodings" if not idx_smaller else "yes for some variants",
+          f"vs {raw_b:.0f} B raw: dense bitmap is larger for all; index list smaller for {idx_smaller or 'none'}; entropy bound smaller for {ideal_smaller or 'none'}; Section 5")
 if len(df[df.experiment == "sdm_summary"]):
     claim("SDM is memory-efficient relative to flat storage", "no in this setting", "bytes per reliable pattern vs a flat bit-packed store; Section 7")
 if len(df[df.experiment == "fault_injection"]):

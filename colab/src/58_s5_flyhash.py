@@ -124,7 +124,8 @@ if RUN_FLY:
     print(f"recall@1 at N={n0} (rows: method, columns: fraction of query bits flipped)")
     display(pivot)
     show("fly_vs_simhash", ["method", "code_bits", "active_units", "bitmap_bytes", "index_list_bytes", "ideal_bytes", "boundary_tie_fraction"], sort=["method"], n=n0, noise=noise_ref)
-    print(f"raw +-1 input: {D / 8:.0f} bytes/item bit-packed. A code whose 'ideal_bytes' exceeds that is larger than the data it encodes.")
+    print(f"raw +-1 input: {D / 8:.0f} bytes/item bit-packed. A code whose bitmap / index-list / entropy-bound size exceeds that is larger than the data it encodes "
+          "(only the entropy bound can be smaller, and it needs combinatorial coding to reach).")
     base = fv[(fv.method == "exact_flat") & (fv.n == n0)]
     zz = [abs(r.recall_at_1 - r.analytic_recall) <= 4.5 * math.sqrt(max(r.analytic_recall * (1 - r.analytic_recall), 1e-12) / r.trials) + 1.0 / r.trials for r in base.itertuples()]
     check("S5 exact-search recall in the FlyHash comparison matches the analytic model", all(zz), f"{len(zz)} noise levels at N={n0}")

@@ -5,7 +5,11 @@
 #   patterns (cross-talk). This quantifies *how much* the Hopfield stage costs relative to exact search.
 # * **Iteration.** `T` steps of ξ ← sign(Mᵀ softmax(β M ξ / D)); each step can denoise the *query itself*, which exact
 #   index lookup cannot do. Bit-error rate (BER) is measured against the stored target pattern.
-# * **Capacity.** Recall vs number of stored patterns at a fixed noise level, against the exact-search analytic curve.
+# * **Capacity.** Recall vs number of stored patterns at a fixed noise level, against the exact-search analytic curve. At *small*
+#   β the capacity curve can be **non-monotonic in N**: the attention is nearly uniform, so the read-out is a linear associator
+#   whose useful term `β·(q·m_j)/D` is independent of N, while its cross-talk noise falls like `sqrt(D/N)`; the diagonal term
+#   `w_j·D` decays with N. Recall therefore dips at intermediate N and recovers at large N. This was checked against an
+#   independent float64 NumPy simulation and is reproduced by the cross-check below, so it is a property of the model, not a bug.
 
 # %% id=s2-code
 #@title 2. Hopfield: beta sweep, iteration, denoising BER, capacity
@@ -33,6 +37,8 @@ if RUN_HOPFIELD:
             r = rng_for(2, 1, n_h, int(noise * 1000), si)
             tg, q_np = make_queries(mem_np, P["Q"], noise, r)
             q = to_f32(put(q_np))
+            if noise == 0.40:
+                xcheck = (mem_np, q_np)                          # kept for the float64 cross-check below
             e_idx, _, e_ties = (np.asarray(a) for a in exact_eval(mem, q))
             e1 = e_idx == tg
             acc.setdefault((noise, "exact", 0, 0.0), []).append((e1, np.zeros(len(tg))))
@@ -54,6 +60,17 @@ if RUN_HOPFIELD:
     for noise in (0.30, 0.40):
         check(f"S2 Hopfield(beta={BETA_BIG:g}) equals exact search wherever the best score is unique (noise {noise})", uniq_mismatch[noise] == 0,
               f"{uniq_mismatch[noise]} mismatches over {uniq_total[noise]} unique-max queries")
+    # float32 JAX kernel vs a float64 NumPy reference on the same data (differences are only possible at near-ties)
+    mem_x, q_x = xcheck
+    agree = {}
+    for beta in (4.0, 16.0, 64.0):
+        M64, Q64 = mem_x.astype(np.float64), q_x.astype(np.float64)
+        sc = Q64 @ M64.T / D
+        w = np.exp(beta * (sc - sc.max(1, keepdims=True))); w /= w.sum(1, keepdims=True)
+        ref_idx = ((w @ M64) @ M64.T).argmax(1)
+        agree[beta] = float(np.mean(ref_idx == np.asarray(hopfield_eval(to_f32(put(mem_x)), to_f32(put(q_x)), beta)[0])))
+    check("S2 float32 JAX Hopfield agrees with a float64 NumPy reference (>= 99% identical predictions)", min(agree.values()) >= 0.99,
+          ", ".join(f"beta={b:g}: {a:.4f}" for b, a in agree.items()))
     show("hopfield_beta", ["method", "noise", "variant", "recall_at_1", "recall_at_1_lo", "recall_at_1_hi", "ber_in", "ber_out", "analytic_recall"],
          sort=["noise", "method", "variant"], max_rows=40)
 
@@ -67,7 +84,10 @@ if RUN_HOPFIELD:
             if len(g):
                 axes[1].plot([steps], g.ber_out, "o" if noise == 0.30 else "s", label=f"noise {noise}" if steps == P["hop_steps"][0] else None, color="C0" if noise == 0.30 else "C1")
     axes[0].set(xscale="log", xlabel="inverse temperature beta", ylabel="recall@1", title=f"Hopfield vs exact (black), N={n_h}"); axes[0].legend(fontsize=7); axes[0].grid(alpha=.25)
-    axes[1].set(xlabel="iteration steps T", ylabel="output bit-error rate (beta=16)", title="denoising of the query pattern"); axes[1].legend(fontsize=8); axes[1].grid(alpha=.25)
+    for noise, col in ((0.30, "C0"), (0.40, "C1")):
+        axes[1].axhline(noise, color=col, ls=":", lw=1)
+    axes[1].set(xlabel="iteration steps T", ylabel="output bit-error rate (beta=16)", title="denoising of the query pattern (dotted: input noise)"); axes[1].legend(fontsize=8); axes[1].grid(alpha=.25)
+    axes[1].set_xticks(P["hop_steps"])
 
     # capacity vs N
     cap_noise, cap_betas = 0.30, [4.0, 16.0, 64.0]

@@ -1,9 +1,10 @@
 # %% [markdown] id=s4-md
 # ## 4. Systems scaling: N sweep, batch sweep, single-request latency, compile cost, memory
 #
-# v1's largest workload (N = 2048, 256 queries, D = 512) is about 0.5 GFLOP, which a modern accelerator finishes in
-# microseconds; the measured milliseconds were launch and synchronisation overhead, so v1 could not distinguish a CPU from
-# a GPU or TPU. This section therefore:
+# v1's largest workload (N = 2048, 256 queries, D = 512) is about 0.5 GFLOP. At accelerator speeds that is far below a
+# millisecond, so the measured time can be dominated by kernel launch and synchronisation overhead (the empty-kernel dispatch
+# floor is measured below), and v1's cross-hardware comparison could not be expected to separate a CPU from a GPU or TPU.
+# This section therefore:
 #
 # * measures the **dispatch floor** (an empty kernel plus a blocking read) and flags every row whose latency is within
 #   5× of it as *launch-bound*;

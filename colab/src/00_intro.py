@@ -13,9 +13,9 @@
 # | Problem found in v1 (each one measured, see `colab/review_evidence.json`) | What v2 does |
 # |---|---|
 # | OOD AUROC = 1.0 and 14/14 fault conditions at recall 1.0: the tests could not fail. Noisy recall at ≤ 25 % flips has an error probability near 1e-11. | Operating points chosen from an exact analytic model so baselines sit near 95 % recall; harder OOD families; many more fault models. |
-# | One draw of 128 queries, no intervals. The published Hopfield-vs-exact gap was not significant (McNemar p = 0.45–0.69) yet in 300 independent batches exact search wins by about 1.5 points. | Several seeds, Wilson intervals, paired exact McNemar tests, analytic cross-check. |
-# | p95/p99 reported from 8 samples; an 8-sample p99 underestimates the true p99 by about 27 %. | Percentiles only when enough samples exist; separate single-request latency study with hundreds of samples. |
-# | Sizes (N ≤ 2048, 128 queries) are launch-bound on accelerators: the arithmetic takes microseconds. | Scaling sweeps in N and batch size with achieved TFLOP/s and GB/s. |
+# | One draw of 128 queries, no intervals. The published Hopfield-vs-exact gaps were not significant (McNemar p = 0.45 and 0.69) yet over 300 independent batches exact search is better at N = 512 and 40 % flips. | Several seeds, Wilson intervals, paired exact McNemar tests, analytic cross-check. |
+# | p95/p99 reported from 8 samples; with so few samples the "p99" is essentially the maximum and is biased low (quantified in `REVIEW.md`). | Percentiles only when enough samples exist; separate single-request latency study with hundreds of samples. |
+# | Sizes (N ≤ 2048, 128 queries) are at most ~0.5 GFLOP, so on an accelerator launch and synchronisation overhead can dominate the measured milliseconds. | A measured dispatch floor, scaling sweeps in N and batch size, achieved GFLOP/s and GB/s, a launch-bound flag. |
 # | Global `highest` matmul precision (multi-pass on TPU, no TF32 on GPU) although ±1 data is exact in bf16/int8. | Explicit precision and kernel variants, including int8 and bit-packed popcount. |
 # | Results list not idempotent (re-running a cell duplicated rows), CSV lacked profile/seed/version columns. | Keyed records, full provenance columns, config hash. |
 # | VSA top-1 equals its oracle by construction; SDM compared without a memory-efficiency view. | Tuple-level and decode-capacity metrics validated against theory; SDM with K/M sweeps and bytes per reliable pattern. |

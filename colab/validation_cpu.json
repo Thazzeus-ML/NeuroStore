@@ -1,0 +1,620 @@
+{
+ "runs": [
+  {
+   "name": "smoke",
+   "profile": "smoke",
+   "overrides": {},
+   "wall_seconds": 28.250776052474976,
+   "cells": [
+    {
+     "cell": "config",
+     "seconds": 0.017559
+    },
+    {
+     "cell": "helpers-numpy",
+     "seconds": 0.072755
+    },
+    {
+     "cell": "setup",
+     "seconds": 1.123171
+    },
+    {
+     "cell": "infra",
+     "seconds": 0.027232
+    },
+    {
+     "cell": "s1-code",
+     "seconds": 1.161676
+    },
+    {
+     "cell": "s2-code",
+     "seconds": 1.835596
+    },
+    {
+     "cell": "s3-code",
+     "seconds": 3.630595
+    },
+    {
+     "cell": "s4-code",
+     "seconds": 5.83776
+    },
+    {
+     "cell": "s5-code",
+     "seconds": 1.69589
+    },
+    {
+     "cell": "s6-code",
+     "seconds": 1.175051
+    },
+    {
+     "cell": "s7-code",
+     "seconds": 2.446341
+    },
+    {
+     "cell": "s8-code",
+     "seconds": 1.362509
+    },
+    {
+     "cell": "s9-code",
+     "seconds": 2.581165
+    },
+    {
+     "cell": "s10-code",
+     "seconds": 0.013947
+    },
+    {
+     "cell": "s11-code",
+     "seconds": 2.566267
+    },
+    {
+     "cell": "s12-code",
+     "seconds": 0.133854
+    },
+    {
+     "cell": "s13-code",
+     "seconds": 0.147872
+    },
+    {
+     "cell": "s13-compare",
+     "seconds": 0.018077
+    }
+   ],
+   "errors": [],
+   "rows": 286,
+   "columns": 131,
+   "experiments": [
+    "dispatch_floor",
+    "fault_injection",
+    "fly_timing",
+    "fly_vs_simhash",
+    "hopfield_beta",
+    "hopfield_capacity",
+    "kernel_variants",
+    "kwta",
+    "latency_dist",
+    "noisy_recall",
+    "noisy_recall_timing",
+    "ood",
+    "precision_vs_D",
+    "scaling_N",
+    "scaling_Q",
+    "scaling_summary",
+    "sdm_capacity",
+    "sdm_impl",
+    "sdm_summary",
+    "sparse_accumulate",
+    "topk_variants",
+    "vsa_decode",
+    "vsa_records"
+   ],
+   "plots": 10,
+   "checks": [
+    {
+     "name": "S1 exact-search recall agrees with the analytic model (|z| <= 4.5)",
+     "ok": true,
+     "detail": "6 (N, noise) cells"
+    },
+    {
+     "name": "S2 Hopfield(beta=8192) equals exact search wherever the best score is unique (noise 0.3)",
+     "ok": true,
+     "detail": "0 mismatches over 128 unique-max queries"
+    },
+    {
+     "name": "S2 Hopfield(beta=8192) equals exact search wherever the best score is unique (noise 0.4)",
+     "ok": true,
+     "detail": "0 mismatches over 127 unique-max queries"
+    },
+    {
+     "name": "S2 float32 JAX Hopfield agrees with a float64 NumPy reference (>= 99% identical predictions)",
+     "ok": true,
+     "detail": "beta=4: 1.0000, beta=16: 1.0000, beta=64: 1.0000"
+    },
+    {
+     "name": "S3 f32/bf16(acc32)/int8/popcount kernels all select a maximal-score pattern",
+     "ok": true,
+     "detail": "10 (kernel, N) cells; min optimal_rate=1.0000"
+    },
+    {
+     "name": "S4 every kernel in the N sweep selects a maximal-score pattern",
+     "ok": true,
+     "detail": "20 (kernel, N) cells"
+    },
+    {
+     "name": "S5 exact-search recall in the FlyHash comparison matches the analytic model",
+     "ok": true,
+     "detail": "3 noise levels at N=256"
+    },
+    {
+     "name": "S5 every WTA code has exactly k active units",
+     "ok": true,
+     "detail": "counts [64]"
+    },
+    {
+     "name": "S6 VSA decode accuracy matches the closed-form prediction for every (D, k)",
+     "ok": true,
+     "detail": "4 cells, 2 informative; violations: 0"
+    },
+    {
+     "name": "S7 scatter/gather SDM is bit-identical to the dense-mask SDM",
+     "ok": true,
+     "detail": "nan"
+    },
+    {
+     "name": "S8 partial_0.5 is indistinguishable from known-25%-noise (AUROC of max_cos within [0.45, 0.55] and CI contains 0.5)",
+     "ok": true,
+     "detail": "AUROC=0.515 CI=[0.472,0.564]"
+    },
+    {
+     "name": "S9 fault-free exact recall matches the analytic model at the chosen operating point",
+     "ok": true,
+     "detail": "measured 0.9570, analytic 0.9499, trials 256.0"
+    },
+    {
+     "name": "S11 JAX sparse-accumulate kernels match the NumPy reference",
+     "ok": true,
+     "detail": "6 (kernel, N) cells"
+    }
+   ],
+   "findings": [
+    "Noisy recall: 67% of the (N, noise) cells have an analytic error probability below 1e-9, so only 33% can separate methods.",
+    "Exact vs Hopfield at N=64, noise 0.4 (exact recall 0.992): paired difference -0.008 [-0.023, +0.007], McNemar p=1, 0.8% of queries differ -> no detectable difference.",
+    "Exact vs Hopfield at N=256, noise 0.4 (exact recall 0.969): paired difference -0.016 [-0.037, +0.006], McNemar p=0.5, 1.6% of queries differ -> no detectable difference.",
+    "Kernels at N=1024, Q=64: speed relative to f32_highest: f32_default 0.88x, bf16_acc32 0.56x, bf16_bf16out 0.51x, int8_acc32 1.51x, packed_popcount 1.78x; popcount memory is 0.031x of f32.",
+    "Scaling: 0% of N-sweep rows are within 5x of the dispatch floor (11 us); best achieved 217 GFLOP/s and 3.5 GB/s at N up to 2048.",
+    "Single-request latency (Q=1, f32): device_resident: p50 803 us (p99 needs >=100 samples); host_roundtrip: p50 1051 us (p99 needs >=100 samples).",
+    "FlyHash vs controls at N=256, 30% flips: exact_flat 1.000, fly_gauss_m2048_k64_f16 0.750, fly_m2048_k64_f16 (v1) 0.781, simhash_512b 0.992. v1 FlyHash code: bitmap 256 B, index list 88 B, entropy bound 51 B, against 64 B for the raw input.",
+    "VSA at D=1024: decode accuracy stays >= 0.9 up to k=29 bundled pairs and falls below it at k=79; tuple-level record accuracy 1.000-1.000.",
+    "SDM: best configuration reliably (>=90% exact) stores 20 patterns; its memory per reliable pattern is 115x-115x that of a flat bit-packed store.",
+    "SDM: 2/3 noisy-cue cells return output with more bit errors than the cue.",
+    "OOD chimera family AUROC: max_cos 0.30, margin_top1_top2 1.00, neg_entropy 0.89, logsumexp 0.13 (0.5 = chance).",
+    "Fault injection: first significant degradation of exact search (severity): bitflip 0.05, stuck_zero 0.25, stuck_pos 0.25, dead_rows 0.05, dead_cols 0.25, gauss_static 0.5, lognormal_gain 0.3, read_noise 0.05, adc_bits 5.0.",
+    "Sparse accumulate: N=256: sparse 0.733 ms vs dense 0.105 ms; N=1024: sparse 0.53 ms vs dense 0.549 ms."
+   ],
+   "environment": {
+    "backend": "cpu",
+    "device_kind": "cpu",
+    "local_device_count": 1,
+    "jax": "0.12.0.1",
+    "jaxlib": "0.12.0.1",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "python": "3.13.18",
+    "config_hash": "bae55c84da"
+   }
+  },
+  {
+   "name": "multidev",
+   "profile": "smoke",
+   "overrides": {
+    "SIMULATE_CPU_DEVICES": "4"
+   },
+   "wall_seconds": 29.67898917198181,
+   "cells": [
+    {
+     "cell": "config",
+     "seconds": 0.02507
+    },
+    {
+     "cell": "helpers-numpy",
+     "seconds": 0.087644
+    },
+    {
+     "cell": "setup",
+     "seconds": 1.20919
+    },
+    {
+     "cell": "infra",
+     "seconds": 0.025961
+    },
+    {
+     "cell": "s1-code",
+     "seconds": 1.150469
+    },
+    {
+     "cell": "s2-code",
+     "seconds": 1.880038
+    },
+    {
+     "cell": "s3-code",
+     "seconds": 3.650046
+    },
+    {
+     "cell": "s4-code",
+     "seconds": 6.363426
+    },
+    {
+     "cell": "s5-code",
+     "seconds": 1.757531
+    },
+    {
+     "cell": "s6-code",
+     "seconds": 1.245694
+    },
+    {
+     "cell": "s7-code",
+     "seconds": 2.439006
+    },
+    {
+     "cell": "s8-code",
+     "seconds": 1.399538
+    },
+    {
+     "cell": "s9-code",
+     "seconds": 2.673625
+    },
+    {
+     "cell": "s10-code",
+     "seconds": 0.306464
+    },
+    {
+     "cell": "s11-code",
+     "seconds": 2.598856
+    },
+    {
+     "cell": "s12-code",
+     "seconds": 0.138663
+    },
+    {
+     "cell": "s13-code",
+     "seconds": 0.194347
+    },
+    {
+     "cell": "s13-compare",
+     "seconds": 0.02241
+    }
+   ],
+   "errors": [],
+   "rows": 289,
+   "columns": 134,
+   "experiments": [
+    "dispatch_floor",
+    "fault_injection",
+    "fly_timing",
+    "fly_vs_simhash",
+    "hopfield_beta",
+    "hopfield_capacity",
+    "kernel_variants",
+    "kwta",
+    "latency_dist",
+    "multidevice",
+    "noisy_recall",
+    "noisy_recall_timing",
+    "ood",
+    "precision_vs_D",
+    "scaling_N",
+    "scaling_Q",
+    "scaling_summary",
+    "sdm_capacity",
+    "sdm_impl",
+    "sdm_summary",
+    "sparse_accumulate",
+    "topk_variants",
+    "vsa_decode",
+    "vsa_records"
+   ],
+   "plots": 10,
+   "checks": [
+    {
+     "name": "S1 exact-search recall agrees with the analytic model (|z| <= 4.5)",
+     "ok": true,
+     "detail": "6 (N, noise) cells"
+    },
+    {
+     "name": "S2 Hopfield(beta=8192) equals exact search wherever the best score is unique (noise 0.3)",
+     "ok": true,
+     "detail": "0 mismatches over 128 unique-max queries"
+    },
+    {
+     "name": "S2 Hopfield(beta=8192) equals exact search wherever the best score is unique (noise 0.4)",
+     "ok": true,
+     "detail": "0 mismatches over 127 unique-max queries"
+    },
+    {
+     "name": "S2 float32 JAX Hopfield agrees with a float64 NumPy reference (>= 99% identical predictions)",
+     "ok": true,
+     "detail": "beta=4: 1.0000, beta=16: 1.0000, beta=64: 1.0000"
+    },
+    {
+     "name": "S3 f32/bf16(acc32)/int8/popcount kernels all select a maximal-score pattern",
+     "ok": true,
+     "detail": "10 (kernel, N) cells; min optimal_rate=1.0000"
+    },
+    {
+     "name": "S4 every kernel in the N sweep selects a maximal-score pattern",
+     "ok": true,
+     "detail": "20 (kernel, N) cells"
+    },
+    {
+     "name": "S5 exact-search recall in the FlyHash comparison matches the analytic model",
+     "ok": true,
+     "detail": "3 noise levels at N=256"
+    },
+    {
+     "name": "S5 every WTA code has exactly k active units",
+     "ok": true,
+     "detail": "counts [64]"
+    },
+    {
+     "name": "S6 VSA decode accuracy matches the closed-form prediction for every (D, k)",
+     "ok": true,
+     "detail": "4 cells, 2 informative; violations: 0"
+    },
+    {
+     "name": "S7 scatter/gather SDM is bit-identical to the dense-mask SDM",
+     "ok": true,
+     "detail": "nan"
+    },
+    {
+     "name": "S8 partial_0.5 is indistinguishable from known-25%-noise (AUROC of max_cos within [0.45, 0.55] and CI contains 0.5)",
+     "ok": true,
+     "detail": "AUROC=0.515 CI=[0.472,0.564]"
+    },
+    {
+     "name": "S9 fault-free exact recall matches the analytic model at the chosen operating point",
+     "ok": true,
+     "detail": "measured 0.9570, analytic 0.9499, trials 256.0"
+    },
+    {
+     "name": "S10 data-parallel and memory-sharded results attain the maximal score (match the single-device reference)",
+     "ok": true,
+     "detail": "4 devices, N=2048, Q=64"
+    },
+    {
+     "name": "S11 JAX sparse-accumulate kernels match the NumPy reference",
+     "ok": true,
+     "detail": "6 (kernel, N) cells"
+    }
+   ],
+   "findings": [
+    "Noisy recall: 67% of the (N, noise) cells have an analytic error probability below 1e-9, so only 33% can separate methods.",
+    "Exact vs Hopfield at N=64, noise 0.4 (exact recall 0.992): paired difference -0.008 [-0.023, +0.007], McNemar p=1, 0.8% of queries differ -> no detectable difference.",
+    "Exact vs Hopfield at N=256, noise 0.4 (exact recall 0.969): paired difference -0.016 [-0.037, +0.006], McNemar p=0.5, 1.6% of queries differ -> no detectable difference.",
+    "Kernels at N=1024, Q=64: speed relative to f32_highest: f32_default 0.72x, bf16_acc32 0.71x, bf16_bf16out 0.50x, int8_acc32 1.53x, packed_popcount 1.21x; popcount memory is 0.031x of f32.",
+    "Scaling: 0% of N-sweep rows are within 5x of the dispatch floor (12 us); best achieved 260 GFLOP/s and 3.7 GB/s at N up to 2048.",
+    "Single-request latency (Q=1, f32): device_resident: p50 981 us (p99 needs >=100 samples); host_roundtrip: p50 1366 us (p99 needs >=100 samples).",
+    "FlyHash vs controls at N=256, 30% flips: exact_flat 1.000, fly_gauss_m2048_k64_f16 0.750, fly_m2048_k64_f16 (v1) 0.781, simhash_512b 0.992. v1 FlyHash code: bitmap 256 B, index list 88 B, entropy bound 51 B, against 64 B for the raw input.",
+    "VSA at D=1024: decode accuracy stays >= 0.9 up to k=29 bundled pairs and falls below it at k=79; tuple-level record accuracy 1.000-1.000.",
+    "SDM: best configuration reliably (>=90% exact) stores 20 patterns; its memory per reliable pattern is 115x-115x that of a flat bit-packed store.",
+    "SDM: 2/3 noisy-cue cells return output with more bit errors than the cue.",
+    "OOD chimera family AUROC: max_cos 0.30, margin_top1_top2 1.00, neg_entropy 0.89, logsumexp 0.13 (0.5 = chance).",
+    "Fault injection: first significant degradation of exact search (severity): bitflip 0.05, stuck_zero 0.25, stuck_pos 0.25, dead_rows 0.05, dead_cols 0.25, gauss_static 0.5, lognormal_gain 0.3, read_noise 0.05, adc_bits 5.0.",
+    "Multi-device (4 devices): data-parallel speedup 0.75x, memory-sharded 0.67x.",
+    "Sparse accumulate: N=256: sparse 0.738 ms vs dense 0.0594 ms; N=1024: sparse 0.746 ms vs dense 0.579 ms."
+   ],
+   "environment": {
+    "backend": "cpu",
+    "device_kind": "cpu",
+    "local_device_count": 4,
+    "jax": "0.12.0.1",
+    "jaxlib": "0.12.0.1",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "python": "3.13.18",
+    "config_hash": "bae55c84da"
+   }
+  },
+  {
+   "name": "quick",
+   "profile": "quick",
+   "overrides": {},
+   "wall_seconds": 269.9392683506012,
+   "cells": [
+    {
+     "cell": "config",
+     "seconds": 0.024018
+    },
+    {
+     "cell": "helpers-numpy",
+     "seconds": 0.125778
+    },
+    {
+     "cell": "setup",
+     "seconds": 1.18397
+    },
+    {
+     "cell": "infra",
+     "seconds": 0.026136
+    },
+    {
+     "cell": "s1-code",
+     "seconds": 4.335366
+    },
+    {
+     "cell": "s2-code",
+     "seconds": 6.122731
+    },
+    {
+     "cell": "s3-code",
+     "seconds": 8.977568
+    },
+    {
+     "cell": "s4-code",
+     "seconds": 133.313482
+    },
+    {
+     "cell": "s5-code",
+     "seconds": 23.874797
+    },
+    {
+     "cell": "s6-code",
+     "seconds": 6.872418
+    },
+    {
+     "cell": "s7-code",
+     "seconds": 20.496325
+    },
+    {
+     "cell": "s8-code",
+     "seconds": 3.283437
+    },
+    {
+     "cell": "s9-code",
+     "seconds": 3.000401
+    },
+    {
+     "cell": "s10-code",
+     "seconds": 0.009607
+    },
+    {
+     "cell": "s11-code",
+     "seconds": 55.400949
+    },
+    {
+     "cell": "s12-code",
+     "seconds": 0.140501
+    },
+    {
+     "cell": "s13-code",
+     "seconds": 0.163544
+    },
+    {
+     "cell": "s13-compare",
+     "seconds": 0.012385
+    }
+   ],
+   "errors": [],
+   "rows": 686,
+   "columns": 131,
+   "experiments": [
+    "dispatch_floor",
+    "fault_injection",
+    "fly_timing",
+    "fly_vs_simhash",
+    "hopfield_beta",
+    "hopfield_capacity",
+    "kernel_variants",
+    "kwta",
+    "latency_dist",
+    "noisy_recall",
+    "noisy_recall_timing",
+    "ood",
+    "precision_vs_D",
+    "scaling_N",
+    "scaling_Q",
+    "scaling_summary",
+    "sdm_capacity",
+    "sdm_impl",
+    "sdm_summary",
+    "sparse_accumulate",
+    "topk_variants",
+    "vsa_decode",
+    "vsa_records"
+   ],
+   "plots": 10,
+   "checks": [
+    {
+     "name": "S1 exact-search recall agrees with the analytic model (|z| <= 4.5)",
+     "ok": true,
+     "detail": "27 (N, noise) cells"
+    },
+    {
+     "name": "S2 Hopfield(beta=8192) equals exact search wherever the best score is unique (noise 0.3)",
+     "ok": true,
+     "detail": "0 mismatches over 768 unique-max queries"
+    },
+    {
+     "name": "S2 Hopfield(beta=8192) equals exact search wherever the best score is unique (noise 0.4)",
+     "ok": true,
+     "detail": "0 mismatches over 749 unique-max queries"
+    },
+    {
+     "name": "S2 float32 JAX Hopfield agrees with a float64 NumPy reference (>= 99% identical predictions)",
+     "ok": true,
+     "detail": "beta=4: 1.0000, beta=16: 1.0000, beta=64: 1.0000"
+    },
+    {
+     "name": "S3 f32/bf16(acc32)/int8/popcount kernels all select a maximal-score pattern",
+     "ok": true,
+     "detail": "9 (kernel, N) cells; min optimal_rate=1.0000"
+    },
+    {
+     "name": "S4 every kernel in the N sweep selects a maximal-score pattern",
+     "ok": true,
+     "detail": "16 (kernel, N) cells"
+    },
+    {
+     "name": "S5 exact-search recall in the FlyHash comparison matches the analytic model",
+     "ok": true,
+     "detail": "7 noise levels at N=512"
+    },
+    {
+     "name": "S5 every WTA code has exactly k active units",
+     "ok": true,
+     "detail": "counts [64]"
+    },
+    {
+     "name": "S6 VSA decode accuracy matches the closed-form prediction for every (D, k)",
+     "ok": true,
+     "detail": "24 cells, 18 informative; violations: 0"
+    },
+    {
+     "name": "S7 scatter/gather SDM is bit-identical to the dense-mask SDM",
+     "ok": true,
+     "detail": "nan"
+    },
+    {
+     "name": "S8 partial_0.5 is indistinguishable from known-25%-noise (AUROC of max_cos within [0.45, 0.55] and CI contains 0.5)",
+     "ok": true,
+     "detail": "AUROC=0.512 CI=[0.494,0.530]"
+    },
+    {
+     "name": "S9 fault-free exact recall matches the analytic model at the chosen operating point",
+     "ok": true,
+     "detail": "measured 0.9551, analytic 0.9501, trials 1536.0"
+    },
+    {
+     "name": "S11 JAX sparse-accumulate kernels match the NumPy reference",
+     "ok": true,
+     "detail": "11 (kernel, N) cells"
+    }
+   ],
+   "findings": [
+    "Noisy recall: 33% of the (N, noise) cells have an analytic error probability below 1e-9, so only 67% can separate methods.",
+    "Exact vs Hopfield at N=128, noise 0.4 (exact recall 0.975): paired difference -0.007 [-0.016, +0.003], McNemar p=0.267, 2.0% of queries differ -> no detectable difference.",
+    "Exact vs Hopfield at N=512, noise 0.4 (exact recall 0.922): paired difference -0.010 [-0.024, +0.004], McNemar p=0.2, 4.8% of queries differ -> no detectable difference.",
+    "Exact vs Hopfield at N=2048, noise 0.4 (exact recall 0.862): paired difference -0.052 [-0.073, -0.032], McNemar p=7.24e-07, 13.4% of queries differ -> Hopfield worse.",
+    "Kernels at N=8192, Q=256: speed relative to f32_highest: f32_default 1.00x, bf16_acc32 0.97x, bf16_bf16out 0.84x, packed_popcount 1.43x; popcount memory is 0.031x of f32.",
+    "Scaling: 0% of N-sweep rows are within 5x of the dispatch floor (12 us); best achieved 468 GFLOP/s and 2.0 GB/s at N up to 32768.",
+    "Single-request latency (Q=1, f32): device_resident: p50 5796 us, p99 8906 us; host_roundtrip: p50 6271 us, p99 10789 us.",
+    "FlyHash vs controls at N=512, 30% flips: exact_flat 1.000, fly_gauss_m2048_k64_f16 0.717, fly_m2048_k128_f16 0.930, fly_m2048_k64_f16 (v1) 0.733, fly_m2048_k64_f64 0.711, fly_m8192_k256_f16 0.999, simhash_2048b 1.000, simhash_512b 0.979. v1 FlyHash code: bitmap 256 B, index list 88 B, entropy bound 51 B, against 64 B for the raw input.",
+    "VSA at D=4096: decode accuracy stays >= 0.9 up to k=135 bundled pairs and falls below it at k=187; tuple-level record accuracy 1.000-1.000.",
+    "SDM: best configuration reliably (>=90% exact) stores 200 patterns; its memory per reliable pattern is 184x-369x that of a flat bit-packed store.",
+    "SDM: 47/72 noisy-cue cells return output with more bit errors than the cue.",
+    "OOD chimera family AUROC: max_cos 0.30, margin_top1_top2 1.00, neg_entropy 0.42, logsumexp 0.12 (0.5 = chance).",
+    "Fault injection: first significant degradation of exact search (severity): bitflip 0.01, stuck_zero 0.05, stuck_pos 0.05, dead_rows 0.01, dead_cols 0.05, gauss_static 0.25, lognormal_gain 0.3, read_noise 0.01, adc_bits 6.0.",
+    "Sparse accumulate: N=1024: sparse 4.37 ms vs dense 2.75 ms; N=4096: sparse 7.93 ms vs dense 37.2 ms; N=16384: sparse 13.4 ms vs dense 630 ms; N=65536: sparse 45.4 ms (dense does not fit)."
+   ],
+   "environment": {
+    "backend": "cpu",
+    "device_kind": "cpu",
+    "local_device_count": 1,
+    "jax": "0.12.0.1",
+    "jaxlib": "0.12.0.1",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "python": "3.13.18",
+    "config_hash": "ac4bfed4c9"
+   }
+  }
+ ]
+}
