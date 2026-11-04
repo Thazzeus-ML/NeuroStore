@@ -35,6 +35,7 @@ def run_suite(
     threads: int | None = None,
     log: Callable[[str], None] | None = None,
     on_result: Callable[[WorkloadResult], None] | None = None,
+    on_progress: Callable[[SuiteResult], None] | None = None,
     fail_fast: bool = False,
 ) -> SuiteResult:
     """Execute workloads sequentially. A crashing workload is recorded (not fatal) unless ``fail_fast``."""
@@ -62,6 +63,8 @@ def run_suite(
         suite.workloads.append(res)
         if on_result:
             on_result(res)
+        if on_progress:
+            on_progress(suite)  # e.g. persist after every workload: a long run never loses finished work
     return suite
 
 

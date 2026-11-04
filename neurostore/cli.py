@@ -92,10 +92,16 @@ def cmd_run(args: argparse.Namespace) -> int:
                 print(f"  [{mark}] {c['name']}: {c['measured']}")
             print(f"  ({res.elapsed_s:.0f} s)", flush=True)
 
+    out = Path(args.out) if args.out else None
+
+    def persist(partial: SuiteResult) -> None:
+        if out is not None:
+            partial.save(out / "results.json")  # atomic; the final write below just overwrites it
+
     suite = run_suite(keys, profile=args.profile, seed=args.seed, overrides=overrides, include_external=not args.no_external,
-                      threads=args.threads, log=_log if verbose else None, on_result=show if verbose else None, fail_fast=args.fail_fast)
-    if args.out:
-        out = Path(args.out)
+                      threads=args.threads, log=_log if verbose else None, on_result=show if verbose else None,
+                      on_progress=persist, fail_fast=args.fail_fast)
+    if out is not None:
         suite.save(out / "results.json")
         (out / "REPORT.md").write_text(render_report(suite))
         print(f"\nwrote {out / 'results.json'} and {out / 'REPORT.md'}")

@@ -23,7 +23,8 @@ Protocol (per cache size N)
 * **ANN agreement**: how often the system returns the same top-1 as exact cosine scan,
   separating *approximation error* from *encoding error*.
 
-Tables: ``systems`` (one row per system and N), ``hardness_sweep`` (recall vs paraphrase cosine).
+Tables: ``systems`` (one row per system and N), ``hardness_sweep`` (recall vs paraphrase cosine, same corpus and
+topics, new queries) and ``flyhash_sweep`` (FlyHash expansion / winners / fan-in vs SimHash at equal bits).
 """
 from __future__ import annotations
 
@@ -92,16 +93,20 @@ def _dataset(cfg: dict[str, Any], seed: int, n_cache: int, para_cos: float, tag:
         neg_q = d["queries"][~pos]
         half = len(neg_q) // 2
         return {"cache": d["cache"], "pos_q": d["queries"][pos], "pos_src": d["labels"][pos], "neg_q": neg_q[half:], "calib_q": neg_q[:half]}
-    rng = make_rng([seed, 20, n_cache, tag])
-    centers = _unit(rng.standard_normal((cfg["n_topics"], cfg["dim"])))
-    cache = make_prompts(rng, n_cache, centers, cfg["topic_rho"])
-    src = rng.integers(0, n_cache, cfg["n_pos"])
+    # The corpus (topic centres + cached prompts) depends only on (seed, n_cache); the queries on (seed, n_cache, tag).
+    # Sweeps vary `tag`/`para_cos` and so get new queries drawn from the SAME topics as the cache -- novel prompts
+    # must come from the cache's own topics or they are artificially easy negatives.
+    crng = make_rng([seed, 20, n_cache])
+    centers = _unit(crng.standard_normal((cfg["n_topics"], cfg["dim"])))
+    cache = make_prompts(crng, n_cache, centers, cfg["topic_rho"])
+    qrng = make_rng([seed, 22, n_cache, tag])
+    src = qrng.integers(0, n_cache, cfg["n_pos"])
     return {
         "cache": cache,
-        "pos_q": make_paraphrases(rng, cache[src], para_cos),
+        "pos_q": make_paraphrases(qrng, cache[src], para_cos),
         "pos_src": src,
-        "neg_q": make_prompts(rng, cfg["n_neg"], centers, cfg["topic_rho"]),
-        "calib_q": make_prompts(rng, cfg["n_calib"], centers, cfg["topic_rho"]),
+        "neg_q": make_prompts(qrng, cfg["n_neg"], centers, cfg["topic_rho"]),
+        "calib_q": make_prompts(qrng, cfg["n_calib"], centers, cfg["topic_rho"]),
     }
 
 
@@ -144,6 +149,35 @@ def _calibrated_metrics(sys_: CacheSystem, data: dict[str, np.ndarray], target_f
     return out
 
 
+# ----------------------------------------------------------------------------- FlyHash hyper-parameter sweep
+def _flyhash_sweep(cfg: dict[str, Any], cache: np.ndarray, sweep_sets: list[tuple[float, dict[str, np.ndarray]]], log: Log) -> list[dict[str, Any]]:
+    """Give FlyHash its best shot: expansion m, winners k (incl. the ~5% of the original paper) and fan-in density,
+    each next to SimHash with the same number of bits, on the hardest paraphrase levels.
+
+    Uses the inverted-index implementation, which returns exactly the same top-1 as the popcount scan (tested) but is
+    far cheaper to evaluate on thousands of queries.
+    """
+    rows: list[dict[str, Any]] = []
+    brute = BruteForceCosineCache()
+    brute.build(cache)
+    for m_bits, k, density in cfg["flyhash_sweep"]:
+        log(f"[C] flyhash sweep m={m_bits} k={k} density={density}")
+        fh = FlyHashInvertedCache(m_bits, k, density=density)
+        fh.build(cache)
+        for pc, sd in sweep_sets:
+            met = _calibrated_metrics(fh, sd, cfg["target_fpr"], None)
+            rows.append({"kind": "flyhash", "bits": m_bits, "k": k, "k_frac": k / m_bits, "density": density, "para_cos": pc,
+                         "recall_at_1": met["recall_at_1"], "tpr_at_fpr": met["tpr_at_fpr"], "bytes_per_prompt": fh.memory_bytes() / len(cache)})
+    for bits in sorted({m for m, _, _ in cfg["flyhash_sweep"]}):
+        sh = SimHashCache(bits)
+        sh.build(cache)
+        for pc, sd in sweep_sets:
+            met = _calibrated_metrics(sh, sd, cfg["target_fpr"], None)
+            rows.append({"kind": "simhash", "bits": bits, "k": None, "k_frac": None, "density": None, "para_cos": pc,
+                         "recall_at_1": met["recall_at_1"], "tpr_at_fpr": met["tpr_at_fpr"], "bytes_per_prompt": sh.memory_bytes() / len(cache)})
+    return rows
+
+
 # ----------------------------------------------------------------------------- run
 def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_external: bool = True, log: Log = null_log) -> WorkloadResult:
     res = WorkloadResult(workload=KEY, title=TITLE, profile=profile, seed=seed, params=dict(cfg))
@@ -151,6 +185,7 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
     specs = _specs(cfg, include_external)
     rows: list[dict[str, Any]] = []
     sweep_rows: list[dict[str, Any]] = []
+    fly_rows: list[dict[str, Any]] = []
     sizes = [None] if cfg.get("embeddings_npz") else list(cfg["n_cache"])
     with limit_threads(cfg.get("threads", 1)):
         for n_cache in sizes:
@@ -193,23 +228,25 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
                         "p50_us": lat["p50_us"], "p99_us": lat["p99_us"], "qps_single": 1e6 / lat["mean_us"],
                         "qps_batch": cfg["batch"] / float(np.median(reps)),
                     })
-                if n_cache == cfg.get("sweep_n_cache") or (n_cache is None):
-                    for pi, pc in enumerate(cfg["para_sweep"]):
-                        sd = _dataset(cfg, seed, n, pc, tag=100 + pi)
-                        sd["cache"] = data["cache"]  # same cache, new paraphrase strength
-                        rng = make_rng([seed, 21, pi])
-                        sd["pos_q"] = make_paraphrases(rng, data["cache"][sd["pos_src"]], pc)
-                        b_ids = next(m for _, m, _ in built if m.name == "bruteforce_cosine").search(sd["pos_q"])[0]
+                if not cfg.get("embeddings_npz") and n_cache == cfg.get("sweep_n_cache"):
+                    sweep_sets = [(pc, _dataset(cfg, seed, n, pc, tag=100 + pi)) for pi, pc in enumerate(cfg["para_sweep"])]
+                    assert all(np.array_equal(sd["cache"], data["cache"]) for _, sd in sweep_sets)  # same corpus, new queries
+                    brute = next(m for _, m, _ in built if m.name == "bruteforce_cosine")
+                    for pc, sd in sweep_sets:
+                        b_ids = brute.search(sd["pos_q"])[0]
                         for spec, m, _ in built:
                             met = _calibrated_metrics(m, sd, cfg["target_fpr"], b_ids)
                             sweep_rows.append({"n_cache": n, "para_cos": pc, "system": spec.name, "family": spec.family or m.family,
                                                "recall_at_1": met["recall_at_1"], "tpr_at_fpr": met["tpr_at_fpr"],
                                                "realised_fpr": met["realised_fpr"]})
+                    fly_rows.extend(_flyhash_sweep(cfg, data["cache"], [x for x in sweep_sets if x[0] in cfg["flyhash_sweep_para"]], log))
             finally:
                 for _, m, _ in built:
                     m.close()
     res.tables["systems"] = rows
     res.tables["hardness_sweep"] = sweep_rows
+    if fly_rows:
+        res.tables["flyhash_sweep"] = fly_rows
     _checks_and_headlines(cfg, res)
     res.notes += [
         "Embeddings are synthetic (topic structure + controlled-cosine paraphrases); absolute recalls depend on topic_rho/para_cos and must be re-measured on real embeddings (embeddings_npz).",
@@ -250,6 +287,15 @@ def _checks_and_headlines(cfg: dict[str, Any], res: WorkloadResult) -> None:
             if same_bits:
                 res.add_check("FlyHash recall@1 >= SimHash recall@1 at the same bit budget", "FlyHash >= SimHash",
                               f"{fscan['recall_at_1'] * 100:.1f}% vs {same_bits[0]['recall_at_1'] * 100:.1f}%", fscan["recall_at_1"] >= same_bits[0]["recall_at_1"])
+        sw = res.tables.get("hardness_sweep", [])
+        if sw:
+            hardest = min(r["para_cos"] for r in sw)
+            f_h = next((r for r in sw if r["system"].startswith("flyhash_scan") and r["para_cos"] == hardest), None)
+            s_h = next((r for r in sw if r["system"] == f"simhash_{cfg['flyhash'][0][0]}" and r["para_cos"] == hardest), None)
+            if f_h and s_h:
+                res.add_check(f"FlyHash recall@1 >= SimHash recall@1 at the same bit budget on the hardest paraphrases (cosine {hardest:g})",
+                              "FlyHash >= SimHash", f"{f_h['recall_at_1'] * 100:.1f}% vs {s_h['recall_at_1'] * 100:.1f}%", f_h["recall_at_1"] >= s_h["recall_at_1"],
+                              note="The headline-level comparison saturates at 100% for both; the hardness sweep is where codes differ.")
         if bf:
             res.add_check("FlyHash recall@1 is within 5 points of exact cosine scan", "FlyHash >= exact - 5 pts",
                           f"{fly['recall_at_1'] * 100:.1f}% vs {bf['recall_at_1'] * 100:.1f}%", fly["recall_at_1"] >= bf["recall_at_1"] - 0.05)

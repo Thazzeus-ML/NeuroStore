@@ -189,6 +189,18 @@ def test_redis_server_is_started_and_stopped(data):
     s.close()  # idempotent
 
 
+def test_redis_reports_a_missing_server_binary_distinctly(monkeypatch):
+    """With the Python client present but no redis-server on PATH, the baseline is skipped with that reason."""
+    pytest.importorskip("redis")
+    monkeypatch.setattr("neurostore.baselines.kv.shutil.which", lambda _name: None)
+    ok, why = RedisKVSystem.available()
+    assert not ok and "redis-server" in why
+    from neurostore.baselines.base import Unavailable
+
+    with pytest.raises(Unavailable, match="redis-server"):
+        RedisKVSystem()
+
+
 @requires_rocksdict
 def test_rocksdb_directory_is_cleaned_up(data):
     import os

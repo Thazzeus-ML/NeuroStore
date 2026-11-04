@@ -105,7 +105,13 @@ def _scale_specs(cfg: dict[str, Any], include_external: bool) -> list[SystemSpec
     ]
     if include_external:
         specs.append(spec_from_class(FaissBinaryHNSWSystem))
+        specs += _hnsw_ef_specs(cfg)
     return specs
+
+
+def _hnsw_ef_specs(cfg: dict[str, Any]) -> list[SystemSpec]:
+    """HNSW at higher efSearch: the recall/latency trade-off, so 'HNSW loses accuracy' is not one setting's artefact."""
+    return [spec_from_class(FaissBinaryHNSWSystem, ef, name=f"faiss_binary_hnsw_ef{ef}") for ef in cfg.get("hnsw_ef_sweep", [])]
 
 
 def _specs(cfg: dict[str, Any], include_external: bool) -> list[SystemSpec]:
@@ -319,7 +325,8 @@ def _checks_and_headlines(cfg: dict[str, Any], res: WorkloadResult) -> None:
     if lsh_names:
         best_lsh = max(lsh_names, key=last_ok)
         res.add_check("Hopfield tolerates more noise than the best LSH configuration", "N_noise(Hopfield) > N_noise(best LSH)",
-                      f"{h_thr * 100:.0f}% vs {last_ok(best_lsh) * 100:.0f}% ({best_lsh})", h_thr > last_ok(best_lsh))
+                      f"{h_thr * 100:.0f}% vs {last_ok(best_lsh) * 100:.0f}% ({best_lsh})", h_thr > last_ok(best_lsh),
+                      note="LSH noise tolerance is a tuning knob (P(found) = 1-(1-(1-p)^k)^L); the more tolerant presets pay with much larger candidate sets and latency (see latency table).")
     it = f"hopfield_b{cfg['beta']:g}_s{cfg['iter_steps']}"
     res.add_check("Attractor iteration extends the noise range of exact value recovery beyond the single-step reference",
                   "N_noise(iterated) >= N_noise(single step)", f"{last_ok(it) * 100:.0f}% vs {h_thr * 100:.0f}%", last_ok(it) >= h_thr)
@@ -327,7 +334,8 @@ def _checks_and_headlines(cfg: dict[str, Any], res: WorkloadResult) -> None:
     step = cfg["noise_step"]
     res.add_check("Single-step Hopfield stays within 2 noise steps of the exact-NN ceiling (information bound, not a win)",
                   "N_noise(Hopfield) >= N_noise(exact NN) - 2 steps", f"{h_thr * 100:.0f}% vs {bf * 100:.0f}%", h_thr >= bf - 2 * step - 1e-9,
-                  note=f"Hopfield with beta={cfg['beta']:g} is soft exact-NN; it cannot exceed the ceiling.")
+                  note=f"A softmax read-out with finite beta (={cfg['beta']:g}) blends neighbouring patterns, so exact value recovery fails a few noise steps before the "
+                       "exact-NN decision does (see the beta sweep); attractor iteration closes the gap. It can never exceed the ceiling.")
     # benchmark self-validation: measured exact-NN identification vs closed form
     worst = 0.0
     for dim in cfg["dims"]:
@@ -370,7 +378,7 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
         if cfg.get("scale_items"):
             _scale_sweep(cfg, seed, res, log, include_external)
         _beta_sweep(cfg, seed, res, log)
-        _latency_memory(cfg, seed, specs, res, log)
+        _latency_memory(cfg, seed, specs + (_hnsw_ef_specs(cfg) if include_external else []), res, log)
     _checks_and_headlines(cfg, res)
     res.notes += [
         "All systems receive identical noisy queries; success means the returned value equals the stored value in all D bits.",

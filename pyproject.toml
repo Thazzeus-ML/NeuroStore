@@ -7,8 +7,9 @@ name = "neurostore"
 version = "0.1.0"
 description = "Benchmark and practical-evaluation framework for a neural-coding data architecture (Hopfield, FlyHash, VSA, CIM)"
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = ["numpy>=1.24"]
+requires-python = ">=3.11"
+# threadpoolctl is core, not optional: every latency/throughput number is quoted for 1 thread, which it enforces.
+dependencies = ["numpy>=1.26", "threadpoolctl>=3.1"]
 
 [project.optional-dependencies]
 # External baselines. Every one of them is optional: the framework detects what is
@@ -16,9 +17,8 @@ dependencies = ["numpy>=1.24"]
 ann = ["faiss-cpu", "qdrant-client"]
 lsh = ["datasketch"]
 kv = ["rocksdict", "redis"]
-threads = ["threadpoolctl"]
 dev = ["pytest"]
-all = ["faiss-cpu", "qdrant-client", "datasketch", "rocksdict", "redis", "threadpoolctl", "pytest"]
+all = ["faiss-cpu", "qdrant-client", "datasketch", "rocksdict", "redis", "pytest"]
 
 [project.scripts]
 neurostore = "neurostore.cli:main"

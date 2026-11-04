@@ -86,6 +86,15 @@ def _render_a(w: WorkloadResult) -> str:
             cells.append("" if r is None else f"{pct(r['last_ok'], 0)} ({pct(r['first_fail'], 0)})" if r["first_fail"] is not None else f"{pct(r['last_ok'], 1)}")
         rows.append([n, *cells])
     out.append(md_table(["system"] + [f"D={d}" for d in dims], rows))
+    n_used = {}
+    for r in rec:
+        if r["family"] != "theory":
+            n_used[r["system"]] = max(n_used.get(r["system"], 0), r["n"])
+    capped = {s_: n_ for s_, n_ in n_used.items() if n_ != cfg["trials"]}
+    if capped:
+        out.append(f"\nQueries per noise level: {cfg['trials']} for every system except " + ", ".join(f"{s_} ({n_})" for s_, n_ in capped.items()) +
+                   " (slow Python systems are evaluated on a prefix of the same queries). Thresholds come from one random key set per dimension, so read them to +-1 grid step; "
+                   "the closed-form rows are the key-set average.\n")
     d0 = dims[0]
     shown = [x for x in (0, 0.05, 0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5) if any(abs(r["noise"] - x) < 1e-9 for r in rec)]
     out.append(f"\n**Exact value recall vs noise** (D={d0}; Wilson 95% CI in the JSON). `theory_bruteforce_ident` is the closed-form exact-NN identification probability.\n")
@@ -204,7 +213,7 @@ def _render_d(w: WorkloadResult) -> str:
     out.append(md_table(["algebra", "T"] + [f"{h}-hop" for h in hops], [[r["algebra"], r["triples"]] + [pct(r[f"path_acc_h{h}"], 1) for h in hops] for r in sorted(sel, key=lambda x: (x["algebra"], x["triples"]))]))
     out.append("\n**Traversal speed and memory** (a graph far inside capacity -- this measures cost, not accuracy):\n")
     out.append(md_table(["system", "D", "E", "triples", "hops/ms (1 query)", "hops/ms (batch)", "bytes/triple", "trace bytes"],
-                        [[r["system"], r["dim"] or "-", r["n_entities"], r["triples"], num(r["hops_per_ms_single"], 1), num(r["hops_per_ms_batch"], 1), num(r["bytes_per_triple"], 0), num(r["trace_bytes"], 0)]
+                        [[r["system"], r["dim"] or "-", r["n_entities"], r["triples"], sig(r["hops_per_ms_single"]), sig(r["hops_per_ms_batch"]), num(r["bytes_per_triple"], 0), num(r["trace_bytes"], 0)]
                          for r in w.tables["speed"]]))
     out.append("\n**Direction control** -- querying an edge backwards must not return the subject:\n")
     out.append(md_table(["algebra", "D", "T", "forward accuracy", "reverse hit rate", "chance"],
@@ -320,11 +329,14 @@ def render_report(suite: SuiteResult) -> str:
     libs = ", ".join(f"{k} {v}" for k, v in (env.get("optional_libs") or {}).items() if v) or "none"
     out = [
         "# NeuroStore benchmark report\n",
-        f"- framework `{suite.framework_version}` | profile `{suite.profile}` | seed `{suite.seed}` | generated {suite.created_utc}",
+        f"- framework `{suite.framework_version}` | profile `{suite.profile}` | seed `{suite.seed}` | generated {suite.created_utc}"
+        + (f" | code revision `{env['git_commit'][:10]}`{' (uncommitted changes)' if env.get('git_dirty') else ''}" if env.get("git_commit") else ""),
         f"- machine: {env.get('cpu_model')} x{env.get('cpu_count')}, {fmt_bytes(env.get('memory_bytes') or 0)} RAM, {env.get('platform')}",
         f"- software: Python {env.get('python')}, NumPy {env.get('numpy')} ({env.get('blas')}); optional libraries: {libs}",
-        f"- timing: per-call `perf_counter_ns`, GC disabled, **1 thread unless stated**; empty-call overhead {env.get('timer_overhead_ns', 0):.0f} ns "
-        "(latencies below ~1 us are dominated by Python call overhead).",
+        f"- timing: per-call `perf_counter_ns`, GC disabled, "
+        + ("**1 thread unless stated** (enforced with threadpoolctl)" if (env.get("optional_libs") or {}).get("threadpoolctl") else
+           "**thread count NOT enforced (threadpoolctl missing): BLAS/OpenMP libraries may have used every core, so throughput and latency are not single-thread numbers**")
+        + f"; empty-call overhead {env.get('timer_overhead_ns', 0):.0f} ns (latencies below ~1 us are dominated by Python call overhead).",
         f"- total benchmark time: {sum(w.elapsed_s for w in suite.workloads):.0f} s\n",
     ]
     rows, tally = scorecard(suite)

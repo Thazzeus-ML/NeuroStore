@@ -10,6 +10,7 @@ import dataclasses
 import datetime as _dt
 import json
 import math
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -130,9 +131,12 @@ class SuiteResult:
         return to_jsonable(d)
 
     def save(self, path: str | Path) -> Path:
+        """Write strict JSON atomically (temp file + rename), so partial progress is never half-written."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.to_dict(), indent=1, allow_nan=False) + "\n")
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(self.to_dict(), indent=1, allow_nan=False) + "\n")
+        os.replace(tmp, path)
         return path
 
     @classmethod

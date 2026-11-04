@@ -124,6 +124,46 @@ def test_report_survives_a_crashed_workload_and_a_renderer_bug(monkeypatch):
     assert "could not be rendered (ZeroDivisionError" in render_report(suite)
 
 
+def test_environment_records_the_code_revision_and_the_report_shows_it(quick_suite):
+    env = quick_suite.environment
+    assert "git_commit" in env and "git_dirty" in env
+    if env["git_commit"]:  # running from a git checkout
+        assert len(env["git_commit"]) == 40 and env["git_commit"][:10] in render_report(quick_suite)
+
+
+def test_progress_is_persisted_after_every_workload_and_writes_are_atomic(tmp_path):
+    seen = []
+    out = tmp_path / "run"
+
+    def persist(partial):
+        partial.save(out / "results.json")
+        seen.append([w.workload for w in SuiteResult.load(out / "results.json").workloads])
+
+    run_suite(["capacity", "cim"], profile="quick", include_external=False, on_progress=persist)
+    assert seen == [["capacity"], ["capacity", "cim"]]  # a crash after the first workload would have kept it
+    assert not list(out.glob("*.tmp"))  # no stray temp file
+
+
+def test_cli_leaves_partial_results_when_a_later_workload_dies(monkeypatch, tmp_path):
+    def die(*a, **k):
+        raise KeyboardInterrupt  # not caught by the per-workload handler (it only catches Exception)
+
+    monkeypatch.setattr(WORKLOADS["cim"], "run", die)
+    out = tmp_path / "o"
+    with pytest.raises(KeyboardInterrupt):
+        cli.main(["run", "-w", "capacity,cim", "--profile", "quick", "--quiet", "--no-external", "--out", str(out)])
+    assert [w.workload for w in SuiteResult.load(out / "results.json").workloads] == ["capacity"]
+
+
+def test_report_says_so_when_single_thread_timing_was_not_enforced(quick_suite):
+    import copy
+
+    assert "enforced with threadpoolctl" in render_report(quick_suite)
+    without = copy.deepcopy(quick_suite)
+    without.environment["optional_libs"]["threadpoolctl"] = None
+    assert "NOT enforced" in render_report(without) and "enforced with threadpoolctl" not in render_report(without)
+
+
 def test_report_marks_skipped_systems():
     w = WorkloadResult("a", "T", "quick", 0)
     w.add_skip("redis", "redis-server binary not found on PATH")

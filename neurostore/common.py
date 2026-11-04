@@ -465,6 +465,19 @@ def optional_versions() -> dict[str, str | None]:
     return out
 
 
+def git_info() -> dict[str, Any]:
+    """Revision of the checkout the code is running from (``None`` outside a git work tree)."""
+    import subprocess
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        commit = subprocess.run(["git", "-C", root, "rev-parse", "HEAD"], capture_output=True, text=True, timeout=5, check=True).stdout.strip()
+        dirty = bool(subprocess.run(["git", "-C", root, "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True, timeout=5, check=True).stdout.strip())
+        return {"git_commit": commit, "git_dirty": dirty}
+    except Exception:  # noqa: BLE001 - not a git checkout, or git missing
+        return {"git_commit": None, "git_dirty": None}
+
+
 def environment_info() -> dict[str, Any]:
     """Machine/software description stored with every result file."""
     try:
@@ -472,6 +485,7 @@ def environment_info() -> dict[str, Any]:
     except (ValueError, OSError, AttributeError):
         total_mem = None
     return {
+        **git_info(),
         "python": platform.python_version(),
         "numpy": np.__version__,
         "blas": _blas_name(),

@@ -95,6 +95,15 @@ def test_workload_a_iterated_attractor_is_at_least_as_robust_as_the_single_step(
     assert any(s["system"] == "hopfield_b20_s3" for s in res.tables["thresholds"])
 
 
+def test_hnsw_ef_search_is_a_per_instance_parameter():
+    pytest.importorskip("faiss")
+    from neurostore.baselines import FaissBinaryHNSWSystem
+
+    assert FaissBinaryHNSWSystem().name == "faiss_binary_hnsw" and FaissBinaryHNSWSystem(64).name == "faiss_binary_hnsw"  # 64 is the default
+    s = FaissBinaryHNSWSystem(512)
+    assert s.name == "faiss_binary_hnsw_ef512" and s.efs == 512 and FaissBinaryHNSWSystem.efs == 64  # instance state, not class state
+
+
 def test_workload_a_scale_sweep_shows_tolerance_falling_as_the_store_grows(quick_suite):
     th = [r for r in quick_suite.get("a").tables["scale_thresholds"] if r["system"] == "theory_bruteforce_ident_exact"]
     by_n = {r["n_items"]: r["last_ok"] for r in th}
@@ -110,6 +119,9 @@ def test_workload_a_runs_every_external_baseline(quick):
     names = {r["system"] for r in res.tables["recall_vs_noise"]}
     assert {"rocksdb", "redis", "faiss_binary_flat", "faiss_binary_hnsw", "qdrant_local", "datasketch_minhash_lsh"} <= names
     assert not [s for s in res.skipped if s["system"] in names]
+    # HNSW is also run at a higher efSearch in the store-size sweep and the latency table (recall/latency trade-off)
+    ef = f"faiss_binary_hnsw_ef{quick['a']['hnsw_ef_sweep'][0]}"
+    assert ef in {r["system"] for r in res.tables["scale_thresholds"]} and ef in {r["system"] for r in res.tables["latency_memory"]}
 
 
 # ----------------------------------------------------------------------------- B
@@ -151,6 +163,32 @@ def test_workload_c_ranks_the_systems_as_expected(quick_suite):
     assert bf[0.9] >= bf[0.7]
 
 
+def test_REGRESSION_c_sweeps_share_the_corpus_and_the_topics_of_the_main_evaluation(quick):
+    """The hardness sweep once regenerated topic centres, so its novel prompts were far easier negatives than the
+    main evaluation's. Sweep datasets must differ only in their queries."""
+    cfg = {**quick["c"], "n_cache": [300]}
+    main = c_prompt_cache._dataset(cfg, 7, 300, 0.9, tag=0)
+    for tag, cos in ((101, 0.7), (102, 0.6)):
+        sweep = c_prompt_cache._dataset(cfg, 7, 300, cos, tag=tag)
+        assert np.array_equal(main["cache"], sweep["cache"])  # identical corpus
+        assert not np.array_equal(main["neg_q"], sweep["neg_q"]) and not np.array_equal(main["pos_q"], sweep["pos_q"])  # new queries
+        # same difficulty of negatives: nearest cached prompt is equally similar to a novel prompt in both
+        hardness = lambda d: float((d["neg_q"] @ d["cache"].T).max(axis=1).mean())  # noqa: E731
+        assert hardness(sweep) == pytest.approx(hardness(main), abs=0.05)
+        assert np.allclose((sweep["pos_q"] * sweep["cache"][sweep["pos_src"]]).sum(axis=1), cos, atol=1e-4)
+    # topic structure is real: novel prompts are far closer to the cache than independent random vectors would be
+    assert hardness(main) > 0.5
+
+
+def test_workload_c_flyhash_sweep_compares_against_simhash_at_equal_bits(quick_suite):
+    rows = quick_suite.get("c").tables["flyhash_sweep"]
+    assert {r["kind"] for r in rows} == {"flyhash", "simhash"}
+    assert {r["bits"] for r in rows if r["kind"] == "simhash"} == {r["bits"] for r in rows if r["kind"] == "flyhash"}
+    assert all(0 <= r["recall_at_1"] <= 1 and 0 <= r["tpr_at_fpr"] <= 1 for r in rows)
+    names = [c["name"] for c in quick_suite.get("c").checks]
+    assert any("hardest paraphrases" in n for n in names)
+
+
 def test_workload_c_accepts_user_supplied_embeddings(quick, tmp_path):
     rng = np.random.default_rng(0)
     cache = rng.standard_normal((200, 32)).astype(np.float32)
@@ -159,7 +197,7 @@ def test_workload_c_accepts_user_supplied_embeddings(quick, tmp_path):
     novel = rng.standard_normal((80, 32)).astype(np.float32)
     path = tmp_path / "emb.npz"
     np.savez(path, cache=cache, queries=np.concatenate([para, novel]), labels=np.concatenate([src, -np.ones(80, dtype=int)]))
-    cfg = {**quick["c"], "embeddings_npz": str(path), "n_cache": [999], "para_sweep": []}
+    cfg = {**quick["c"], "embeddings_npz": str(path), "n_cache": [999]}  # the paraphrase sweep is skipped for user data
     res = c_prompt_cache.run(cfg, seed=0, include_external=False)
     bf = next(r for r in res.tables["systems"] if r["system"] == "bruteforce_cosine")
     assert bf["n_cache"] == 200 and bf["n_pos"] == 60 and bf["n_neg"] == 40 and bf["recall_at_1"] > 0.9

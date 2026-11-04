@@ -29,6 +29,8 @@ class BitSamplingLSHSystem(IdBasedSystem):
         if not 1 <= k_bits <= 62:
             raise ValueError("k_bits must be in [1, 62]")
         self.k, self.L, self.seed = int(k_bits), int(n_tables), seed
+        if self.L >= 128:  # each query touches thousands of candidates: evaluate on fewer queries
+            self.max_queries = 200
         self.name = f"lsh_k{self.k}_L{self.L}"
         self.label = f"Bit-sampling LSH (k={self.k}, L={self.L})"
         self.candidates_seen = 0

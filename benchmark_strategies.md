@@ -60,7 +60,10 @@ have cosine `topic_rho`, so negatives are hard) and *paraphrases* at controlled 
 cache size: recall@1 on paraphrases; **true-hit rate at a fixed false-hit rate** (threshold calibrated
 on separate novel prompts, evaluated on held-out ones); single-query and batched throughput; bytes
 per cached prompt; build time; agreement with exact cosine scan (separates approximation error from
-encoding error). A hardness sweep varies the paraphrase cosine. Real embeddings can be supplied
+encoding error). A hardness sweep varies the paraphrase cosine over the **same corpus and topics** (only
+the queries change). A FlyHash hyper-parameter sweep (expansion `m`, winners `k` including the ≈5 % of the
+original paper, fan-in density) runs next to SimHash with the same number of bits, so FlyHash is judged
+at its best configuration and not at one setting. Real embeddings can be supplied
 (`embeddings_npz`, see `workloads/c_prompt_cache.py:load_embeddings`).
 
 **D — holographic graph walking.** All `T` triples are superposed in **one** `D`-vector; a hop unbinds
@@ -81,9 +84,9 @@ Real systems, not stand-ins. "family" is the key the scorecard groups by.
 | Exact KV | **RocksDB** (`rocksdict`) | `kv` | embedded, raw bytes; memory = persisted SST bytes | idem |
 | Exact KV | **Redis** (`redis-server`) | `kv` | real server subprocess on a free port, localhost TCP; memory = `INFO used_memory` growth | idem |
 | Exact search | brute-force Hamming / cosine | `ann` | XOR+popcount scan; float32 BLAS scan — **the accuracy ceiling** | what any retriever can at best achieve |
-| ANN / vector DB | **FAISS** `IndexBinaryFlat/HNSW`, `IndexFlatIP`, `IndexHNSWFlat` | `ann` | `M=32`, `efConstruction=200`, `efSearch=64` | accuracy vs latency vs build time |
+| ANN / vector DB | **FAISS** `IndexBinaryFlat/HNSW`, `IndexFlatIP`, `IndexHNSWFlat` | `ann` | `M=32`, `efConstruction=200`, `efSearch=64`; binary HNSW is also run at `efSearch` 256 and 1024 in the store-size sweep and latency table | accuracy vs latency vs build time |
 | ANN / vector DB | **Qdrant** (embedded local mode) | `ann` | NumPy scan behind a client API; capped at 20 k items | client/DB overhead |
-| LSH | custom **bit-sampling LSH** | `lsh` | `k` sampled bits × `L` tables + exact re-rank; `P(found) = 1 − (1 − (1−p)^k)^L` | noise tolerance vs candidate-set size |
+| LSH | custom **bit-sampling LSH** | `lsh` | `k` sampled bits × `L` tables + exact re-rank; `P(found) = 1 − (1 − (1−p)^k)^L`; three presets from fast `(12,32)` to noise-robust `(5,256)` | noise tolerance is a tuning knob paid for in candidate-set size and latency |
 | LSH | **datasketch** MinHash-LSH | `lsh` | Jaccard over the set of `+1` coordinates | idem |
 | LSH | SimHash | `lsh` | random-hyperplane signatures, Hamming scan, same bit budget as FlyHash | the FlyHash-vs-LSH comparison |
 | Relational | per-column inverted index + intersect; linear scan; **composite index per field subset**; fuzzy scan | `relational` | exact; fuzzy scan is the "expensive fuzzy join" and the ceiling for corrupted cues | memory blow-up `C(F,K)` vs `F`, query cost |
@@ -208,7 +211,7 @@ device I–V, temperature.
 ## 6. Execution plan
 
 ```bash
-pip install -e '.[all]'          # NumPy is the only hard dependency; extras add the real baselines
+pip install -e '.[all]'          # core: numpy + threadpoolctl (Python >= 3.11); extras add the real baselines
 pytest                            # 200+ tests, ~15 s: validates the framework itself
 neurostore list                   # which baselines are installed here
 
@@ -216,6 +219,10 @@ neurostore run --profile quick                          # seconds: smoke test of
 neurostore run --profile standard --out results/standard --strict   # reference run
 neurostore run --profile full --out results/full        # larger stores, 10^5-prompt cache
 ```
+
+Results are written to `results.json` **after every workload** (atomically), so an interrupted run keeps
+what finished and `neurostore report` can render it. Every result file records the machine, library
+versions, whether single-thread timing was enforced, and the git revision of the code that produced it.
 
 The three suggested next steps map to single commands:
 
@@ -267,6 +274,10 @@ To use your own data: `neurostore scaffold`, edit `benchmark_workspace/config.js
 * **Python/NumPy implementations.** Latencies measure *these* implementations on *this* CPU with
   interpreter overhead. They say nothing about what an optimised C++/SIMD/GPU implementation of the
   neural primitives could reach; FAISS, RocksDB and Redis are native code and are favoured by that.
+* **One random key set per dimension.** Noise thresholds in Workload A come from a single draw of the
+  stored keys; near the 99 % crossing the recall curve is steep (tens of points per noise step), so read a
+  threshold to ±1 grid step. The closed-form rows are the key-set average, and the self-check compares the
+  two over the whole grid.
 * **Single machine, 1 thread.** Throughput is per core. Multi-core scaling, NUMA and cache effects of
   stores larger than RAM are out of scope.
 * **Memory accounting differs by system** (deep object size, serialised size, SST bytes, server

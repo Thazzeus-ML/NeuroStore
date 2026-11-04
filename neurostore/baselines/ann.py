@@ -95,8 +95,17 @@ class FaissBinaryFlatSystem(_FaissBinary):
 
 
 class FaissBinaryHNSWSystem(_FaissBinary):
+    """FAISS binary HNSW; ``ef_search`` trades recall for latency (default 64, M=32, efConstruction=200)."""
+
     name = "faiss_binary_hnsw"
     label = "FAISS IndexBinaryHNSW (approximate)"
+
+    def __init__(self, ef_search: int | None = None) -> None:
+        super().__init__()
+        if ef_search is not None and int(ef_search) != self.efs:
+            self.efs = int(ef_search)
+            self.name = f"faiss_binary_hnsw_ef{self.efs}"
+            self.label = f"FAISS IndexBinaryHNSW (efSearch={self.efs})"
 
     def _make_index(self, nbits: int) -> Any:
         import faiss

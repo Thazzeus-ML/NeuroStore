@@ -17,7 +17,7 @@ the reference run is in [`results/standard/REPORT.md`](results/standard/REPORT.m
 ## Quick start
 
 ```bash
-pip install -e '.[all]'      # NumPy is the only hard dependency; extras add the real baselines
+pip install -e '.[all]'      # core: numpy + threadpoolctl (Python >= 3.11); extras add the real baselines
 pytest                        # validates the framework itself (~15 s)
 
 neurostore list               # workloads, profiles, which baselines are installed here
