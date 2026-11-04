@@ -1,7 +1,7 @@
 PY ?= python3
 export PYTHONPATH := src:.
 
-.PHONY: test bench report clean colab-build colab-validate colab-review
+.PHONY: test bench report clean colab-build colab-validate colab-review pdm-fetch pdm-study pdm-gates pdm-report
 test:
 	$(PY) -m pytest
 
@@ -27,3 +27,17 @@ colab-validate: colab-build
 colab-review:
 	$(COLAB_PY) colab/review_experiments.py
 	$(PY) colab/make_review.py
+
+# ---- nsharness + PdM study (studies/pdm_cmapss/): protocol and gates are pre-registered; results land in results/pdm_cmapss/
+# The scripts are run with `-I` (isolated: they read downloaded data) and put src/ on the path themselves.
+pdm-fetch:
+	$(PY) -I studies/pdm_cmapss/fetch_data.py
+
+pdm-study:
+	@for s in validate tune tune_others test sweeps completion ood timing; do $(PY) -I studies/pdm_cmapss/run_study.py --stage $$s || exit 1; done
+
+pdm-gates:
+	$(PY) -I studies/pdm_cmapss/evaluate_gates.py
+
+pdm-report:
+	$(PY) -I studies/pdm_cmapss/make_report.py

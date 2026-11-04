@@ -1,0 +1,44 @@
+# Pre-registered decision rules for the PdM study (PROTOCOL.md section 6). Thresholds are fixed BEFORE any C-MAPSS result exists.
+# evaluate_gates.py reads this file; nothing else may change a verdict.
+
+[g1]   # harness validity: observed exact-search recall lies inside the Wilson interval around the closed form
+claim = "the harness reproduces the closed-form flat-search recall on the synthetic +-1 world"
+min_configs_inside = 5          # of the 5 configurations, all must be inside (99.7 % interval)
+
+[g2]   # retrieval-based RUL estimation is a competent estimator on FD001 (official test, raw labels)
+claim = "exact retrieval beats a constant predictor clearly and stays within 25 % of ridge regression"
+max_ratio_vs_const = 0.60       # RMSE(reference) / RMSE(constant) <= 0.60
+max_ratio_vs_ridge = 1.25       # RMSE(reference) / RMSE(ridge)    <= 1.25
+
+[g3]   # non-inferiority of every alternative backend against the exact reference (FD001 official test, raw labels)
+claim = "the alternative store loses at most 10 % RMSE against exact"
+margin = 1.10                   # HELD: CI upper bound of the paired RMSE ratio <= 1.10; INCONCLUSIVE: point <= 1.10 < upper bound; NOT HELD: point > 1.10
+
+[g4]   # efficiency
+claim = "some store that is non-inferior needs <= 50 % of exact's deployed bytes, and ANN is >= 3x faster than exact at n = 500k with recall@10 >= 0.9"
+max_memory_fraction = 0.50
+scale_n = 500000
+max_latency_fraction = 0.3333
+min_recall = 0.90
+
+[g5]   # robustness to standardized corruption, level L50 (exact degrades x1.5)
+claim = "some alternative backend degrades less than exact in at least 3 of 7 corruption families (paired CI excludes zero)"
+level = "L50"
+min_families = 3
+
+[g6a]  # near-OOD: unseen fault mode, late-life windows (FD003 against an FD001 memory), exact reference, max-similarity score
+claim = "the memory recognises late-life windows of a different fault mode as unfamiliar"
+min_auroc_lower_ci = 0.75
+
+[g6b]  # chimeras: dose-response in the life-stage gap
+claim = "channel chimeras assembled from far-apart life stages are detected much better than same-stage chimeras"
+min_auroc_far = 0.70            # and the lower CI of 'far' must exceed the upper CI of 'same'
+
+[g6c]  # sanity
+claim = "Gaussian-noise windows are flagged as unfamiliar"
+min_auroc_gauss = 0.95
+
+[g7]   # pattern completion
+claim = "with 30 % of channels lost, the mask-aware exact store restores the missing features far better than mean imputation"
+severity = 0.3
+max_nmse = 0.50                 # mean imputation scores ~1.0

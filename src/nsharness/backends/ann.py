@@ -1,4 +1,6 @@
-"""IVF approximate search: spherical k-means coarse quantiser, nprobe inverted lists, optional 8-bit scalar quantisation."""
+"""IVF approximate search: k-means coarse quantiser, nprobe inverted lists, optional 8-bit scalar quantisation.
+metric="cosine": spherical k-means on unit vectors, similarity = cosine.  metric="l2": Euclidean k-means on the raw vectors,
+similarity = -(mean squared difference per feature) (what IVF-Flat does in a vector database)."""
 from __future__ import annotations
 import math
 import numpy as np
@@ -11,8 +13,9 @@ class IVFBackend(Backend):
     supports_mask = False            # a masked query is simply zero-filled
     supports_reconstruct = False     # the index sits on top of an exact store; completion is measured on that store
 
-    def __init__(self, nlist=None, nprobe=8, sq8=False, beta=None, iters=10, train_cap=40000, list_factor=2.0):
-        super().__init__(nlist=nlist, nprobe=nprobe, sq8=sq8, beta=beta, iters=iters, train_cap=train_cap, list_factor=list_factor)
+    def __init__(self, nlist=None, nprobe=8, sq8=False, beta=None, iters=10, train_cap=40000, list_factor=2.0, metric="cosine"):
+        assert metric in ("cosine", "l2"), metric
+        super().__init__(nlist=nlist, nprobe=nprobe, sq8=sq8, beta=beta, iters=iters, train_cap=train_cap, list_factor=list_factor, metric=metric)
         self.last_scanned = float("nan")
 
     @property
@@ -23,47 +26,66 @@ class IVFBackend(Backend):
         self.cfg["nprobe"] = int(nprobe)
         return self
 
+    @property
+    def _l2(self):
+        return self.cfg["metric"] == "l2"
+
     def fit(self, X, seed: int = 0):
         rng = seed_stream(seed, 11)
         X = np.asarray(X, np.float32)
         self.n, self.d = X.shape
-        Xn = X / np.maximum(np.linalg.norm(X, axis=1, keepdims=True), 1e-12)
+        data = X if self._l2 else X / np.maximum(np.linalg.norm(X, axis=1, keepdims=True), 1e-12)
         nlist = self.cfg["nlist"] or int(max(1, round(self.cfg["list_factor"] * math.sqrt(self.n))))
         nlist = int(min(nlist, self.n))
         cap = int(self.cfg["train_cap"])
-        sample = Xn if self.n <= cap else Xn[rng.choice(self.n, cap, replace=False)]
-        self.C, _ = kmeans(sample, nlist, rng, iters=int(self.cfg["iters"]), spherical=True)
+        sample = data if self.n <= cap else data[rng.choice(self.n, cap, replace=False)]
+        self.C, _ = kmeans(sample, nlist, rng, iters=int(self.cfg["iters"]), spherical=not self._l2)
         self.C = self.C.astype(np.float32)
         self.nlist = len(self.C)
+        self._csq = (self.C * self.C).sum(1)
         assign = np.empty(self.n, np.int32)
         for a, b in iter_chunks(self.n, 8192):
-            assign[a:b] = np.argmax(Xn[a:b] @ self.C.T, axis=1)
+            assign[a:b] = np.argmax(self._centroid_sims(data[a:b]), axis=1)
         order = np.argsort(assign, kind="stable")
         counts = np.bincount(assign, minlength=self.nlist)
         self.ptr = np.zeros(self.nlist + 1, np.int64)
         np.cumsum(counts, out=self.ptr[1:])
         self.order = order.astype(np.int32)
-        Xl = np.ascontiguousarray(Xn[order])
+        Xl = np.ascontiguousarray(data[order])
         if self.cfg["sq8"]:
             self.scale = (np.maximum(np.abs(Xl).max(axis=0), 1e-9) / 127.0).astype(np.float32)
             self.Xq = np.clip(np.round(Xl / self.scale), -127, 127).astype(np.int8)
             self.Xl = None
+            deq = self.Xq.astype(np.float32) * self.scale
         else:
-            self.Xl, self.Xq, self.scale = Xl, None, None
+            self.scale, self.Xq, self.Xl = None, None, Xl
+            deq = Xl
+        self.xsq = (deq * deq).sum(1).astype(np.float32) if self._l2 else None
         return self
+
+    def _centroid_sims(self, Q):
+        """(q, nlist) probe scores, higher = closer (the per-query constant is dropped for l2)."""
+        s = Q @ self.C.T
+        return 2.0 * s - self._csq[None, :] if self._l2 else s
 
     def _list_vectors(self, lo, hi):
         if self.Xl is not None:
             return self.Xl[lo:hi]
         return self.Xq[lo:hi].astype(np.float32) * self.scale
 
+    def _block_sims(self, Q, qsq, V, xsq):
+        s = Q @ V.T
+        return s if not self._l2 else -(qsq[:, None] - 2.0 * s + xsq[None, :]) / self.d
+
     def search(self, Q, k, mask=None):
         Q = np.asarray(Q, np.float32)
-        Q = Q / np.maximum(np.linalg.norm(Q, axis=1, keepdims=True), 1e-12)
+        if not self._l2:
+            Q = Q / np.maximum(np.linalg.norm(Q, axis=1, keepdims=True), 1e-12)
+        qsq = (Q * Q).sum(1)
         q = len(Q)
         k = min(int(k), self.n)
         npb = min(self.nprobe, self.nlist)
-        probes, _ = topk_desc(Q @ self.C.T, npb)
+        probes, _ = topk_desc(self._centroid_sims(Q), npb)
         best_s = np.full((q, k), -np.inf, np.float32)
         best_i = np.full((q, k), -1, np.int64)
         flat_l = probes.ravel()
@@ -78,7 +100,7 @@ class IVFBackend(Backend):
             if hi == lo:
                 continue
             qs = fq[a:b]
-            S = Q[qs] @ self._list_vectors(lo, hi).T
+            S = self._block_sims(Q[qs], qsq[qs], self._list_vectors(lo, hi), None if self.xsq is None else self.xsq[lo:hi])
             scanned += S.size
             ti, tv = topk_desc(S, min(k, hi - lo))
             cs = np.concatenate([best_s[qs], tv], axis=1)
@@ -90,9 +112,8 @@ class IVFBackend(Backend):
         short = np.where(best_i[:, -1] < 0)[0]          # fewer than k candidates in the probed lists: fall back to a full scan
         if len(short):
             full = np.concatenate([self._list_vectors(int(self.ptr[l]), int(self.ptr[l + 1])) for l in range(self.nlist)])
-            ids = self.order
-            ti, tv = topk_desc(Q[short] @ full.T, k)
-            best_s[short], best_i[short] = tv, ids[ti]
+            ti, tv = topk_desc(self._block_sims(Q[short], qsq[short], full, self.xsq), k)
+            best_s[short], best_i[short] = tv, self.order[ti]
             self.last_scanned = float(self.n + self.nlist)
         return best_i, best_s
 
@@ -103,4 +124,6 @@ class IVFBackend(Backend):
         else:
             rep["vectors_i8"] = self.Xq.nbytes
             rep["sq8_scale_f32"] = self.scale.nbytes
+        if self.xsq is not None:
+            rep["sq_norms_f32"] = self.xsq.nbytes
         return rep

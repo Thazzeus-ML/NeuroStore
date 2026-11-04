@@ -51,6 +51,24 @@ def test_exact_masked_cosine_uses_only_observed_features():
         assert sim[i, 0] == pytest.approx(brute.max(), abs=1e-5) and idx[i, 0] == brute.argmax()
 
 
+def test_exact_l2_equals_bruteforce_including_masked():
+    rng = np.random.default_rng(4)
+    X = clustered(); Q = X[:25] + 0.3 * rng.normal(size=(25, X.shape[1])).astype(np.float32)
+    be = make_backend("exact_l2").fit(X)
+    idx, sim = be.search(Q, 6)
+    msd = ((Q[:, None, :] - X[None, :, :]) ** 2).mean(-1)
+    assert np.allclose(sim, -np.sort(msd, axis=1)[:, :6], atol=1e-4) and (idx[:, 0] == msd.argmin(1)).all()
+    mask = rng.random(Q.shape) < 0.6
+    mask[:, :2] = True
+    idx, sim = be.search(np.where(mask, Q, 0), 3, mask)
+    for i in range(25):
+        m = mask[i]
+        brute = ((X[:, m] - Q[i, m]) ** 2).mean(1)
+        assert sim[i, 0] == pytest.approx(-brute.min(), abs=1e-4) and idx[i, 0] == brute.argmin()
+    assert np.allclose(be.raw(idx[:, 0]), X[idx[:, 0]]) and be.index_bytes() == X.nbytes + 4 * len(X)
+    assert be.reconstruct(Q, 1).shape == Q.shape
+
+
 def test_weights_and_readout():
     X = clustered(); y = np.arange(len(X), dtype=np.float32)
     be = make_backend("exact").fit(X)
@@ -72,6 +90,21 @@ def test_ann_probing_every_list_is_exact():
     ia, sa = ann.search(Q, 8); ie, se = ex.search(Q, 8)
     assert np.allclose(sa, se, atol=1e-5)
     assert all(set(a) == set(b) for a, b in zip(ia.tolist(), ie.tolist()))
+
+
+def test_ann_l2_probing_every_list_equals_exact_l2_and_counts_norm_bytes():
+    X = clustered(n=600); Q = X[:40] + 0.3
+    ann = make_backend("ann", nlist=20, nprobe=20, metric="l2").fit(X, 0)
+    ex = make_backend("exact_l2").fit(X)
+    ia, sa = ann.search(Q, 8); ie, se = ex.search(Q, 8)
+    assert np.allclose(sa, se, atol=1e-4) and all(set(a) == set(b) for a, b in zip(ia.tolist(), ie.tolist()))
+    assert ann.index_bytes() == ann.C.nbytes + ann.ptr.nbytes + ann.order.nbytes + ann.Xl.nbytes + ann.xsq.nbytes
+    q8 = make_backend("ann", nlist=20, nprobe=20, metric="l2", sq8=True).fit(X, 0)
+    i8, s8 = q8.search(Q, 8)
+    assert np.mean([len(set(a) & set(b)) / 8 for a, b in zip(i8.tolist(), ie.tolist())]) > 0.85 and q8.index_bytes() < ann.index_bytes()
+    short = make_backend("ann", nlist=30, nprobe=1, metric="l2").fit(clustered(n=60), 0)
+    idx, sim = short.search(X[:5], 10)
+    assert (idx >= 0).all() and np.isfinite(sim).all()
 
 
 def test_ann_recall_grows_with_nprobe_and_sq8_costs_little():
@@ -148,6 +181,18 @@ def test_hopfield_limits_and_full_attention():
     topk = make_backend("hopfield", beta=20.0, full_attention=False).fit(X)
     ex = make_backend("exact", beta=20.0).fit(X)
     assert np.allclose(topk.readout(X[:6], y, 5), ex.readout(X[:6], y, 5))
+
+
+def test_hopfield_l2_attention_is_a_gaussian_kernel_regression():
+    X = clustered(); y = np.arange(len(X), dtype=np.float32)
+    be = make_backend("hopfield", beta=2.0, metric="l2").fit(X)
+    Q = X[:4] + 0.2
+    w = np.exp(-2.0 * ((Q[:, None, :] - X[None, :, :]) ** 2).mean(-1))
+    assert np.allclose(be.readout(Q, y, 1), (w * y).sum(1) / w.sum(1), rtol=1e-4)
+    assert np.allclose(make_backend("hopfield", beta=1e5, metric="l2").fit(X).readout(X[:5], y, 1), y[:5])
+    mask = np.ones((4, X.shape[1]), bool); mask[:, ::3] = False
+    R = make_backend("hopfield", beta=20.0, metric="l2").fit(X).reconstruct(np.where(mask, Q, 0).astype(np.float32), 5, mask)
+    assert np.allclose(R[mask], Q[mask])
 
 
 def test_hopfield_completion_clamps_observed_and_fills_missing():

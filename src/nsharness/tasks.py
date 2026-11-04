@@ -39,6 +39,30 @@ def paired_rmse_diff(y, PA, PB, groups, n_boot: int = 500, seed: int = 0) -> dic
     return {"diff": pt, "lo": lo, "hi": hi, "excludes_zero": bool(lo > 0 or hi < 0)}
 
 
+def paired_rmse_ratio(y, PA, PB, groups, n_boot: int = 1000, seed: int = 0) -> dict:
+    """RMSE(A) / RMSE(B) with a bootstrap that resamples whole groups and evaluates both on the SAME resample. PA, PB: (S, n)."""
+    PA, PB = np.atleast_2d(PA), np.atleast_2d(PB)
+    y = np.asarray(y, float)
+    sa, sb = (PA - y) ** 2, (PB - y) ** 2
+    pt, lo, hi, _ = group_bootstrap(lambda i: float(np.sqrt(sa[:, i].mean() / sb[:, i].mean())), groups, n_boot=n_boot, seed=seed)
+    return {"ratio": pt, "lo": lo, "hi": hi}
+
+
+def degradation(se_clean, se_corrupt, groups, n_boot: int = 500, seed: int = 0) -> dict:
+    """RMSE(corrupted) / RMSE(clean) of one backend, from per-query squared errors (S, n) / (R, n), with a group-bootstrap CI."""
+    sc, sk = np.atleast_2d(se_clean), np.atleast_2d(se_corrupt)
+    pt, lo, hi, _ = group_bootstrap(lambda i: float(np.sqrt(sk[:, i].mean() / sc[:, i].mean())), groups, n_boot=n_boot, seed=seed)
+    return {"ratio": pt, "lo": lo, "hi": hi, "rmse_clean": float(np.sqrt(sc.mean())), "rmse_corrupt": float(np.sqrt(sk.mean()))}
+
+
+def paired_degradation_diff(se_clean_a, se_corr_a, se_clean_b, se_corr_b, groups, n_boot: int = 500, seed: int = 0) -> dict:
+    """degradation(A) - degradation(B) on shared group resamples (negative: A degrades less than B)."""
+    ca, ka, cb, kb = (np.atleast_2d(x) for x in (se_clean_a, se_corr_a, se_clean_b, se_corr_b))
+    pt, lo, hi, _ = paired_group_bootstrap(lambda i: float(np.sqrt(ka[:, i].mean() / ca[:, i].mean())),
+                                           lambda i: float(np.sqrt(kb[:, i].mean() / cb[:, i].mean())), groups, n_boot=n_boot, seed=seed)
+    return {"diff": pt, "lo": lo, "hi": hi, "excludes_zero": bool(lo > 0 or hi < 0)}
+
+
 def predict_under_corruption(pipeline, Z, family: str, severity: float, seed: int, give_mask: bool = False):
     Zc, obs = corrupt(Z, family, severity, seed)
     return pipeline.predict(Zc, obs if give_mask else None)
@@ -54,7 +78,18 @@ def completion_eval(pipeline, Z_clean, severity: float, seed: int, give_mask: bo
         raise ValueError("completion needs a feature mask: use a featurizer without PCA")
     R = pipeline.reconstruct(Zc, obs if give_mask else None)
     missing = ~fmask
-    return {"nmse": completion_nmse(F_true, R, missing), "missing_frac": float(missing.mean())}
+    nm = missing.sum(1)
+    per_query = np.where(nm > 0, (((R - F_true) ** 2) * missing).sum(1) / np.maximum(nm, 1), np.nan)
+    return {"nmse": completion_nmse(F_true, R, missing), "missing_frac": float(missing.mean()), "per_query": per_query}
+
+
+def mean_imputation_nmse(pipeline, Z_clean, severity: float, seed: int) -> np.ndarray:
+    """Per-query NMSE of predicting the training mean (zero in z-scored features) for the features lost to channel dropout."""
+    _, obs = corrupt(Z_clean, "dropout", severity, seed)
+    F_true = pipeline.features(Z_clean)
+    missing = ~pipeline.feat.feature_mask(obs)
+    nm = missing.sum(1)
+    return np.where(nm > 0, ((F_true ** 2) * missing).sum(1) / np.maximum(nm, 1), np.nan)
 
 
 def recall_vs_exact(approx_pipeline, exact_pipeline, Z, k: int = 10) -> float:

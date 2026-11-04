@@ -36,42 +36,7 @@ def test_blob_world_shapes_and_query_locality():
 
 
 # ---------------------------------------------------------------- C-MAPSS adapter on fake files
-OPS = np.array([[0, 0, 100], [10, 0.25, 100], [20, 0.7, 100], [25, 0.62, 60], [35, 0.84, 100], [42, 0.84, 100]], float)
-
-
-def fake_table(rng, n_eng, lens, regimes, shift=0.0):
-    rows = []
-    for u in range(1, n_eng + 1):
-        L = lens[u - 1]
-        t = np.arange(1, L + 1)
-        reg = rng.integers(0, regimes, L)
-        ops = OPS[reg] + rng.normal(0, 0.002, (L, 3)) if regimes > 1 else np.column_stack([rng.normal(0, 0.002, L), rng.normal(0, 0.0003, L), np.full(L, 100.0)])
-        S = np.zeros((L, 21))
-        for j in range(21):
-            if j in (0, 4, 9):                         # constant sensors (s1, s5, s10)
-                S[:, j] = 100.0 + j
-            elif j == 5:                               # s6: two distinct values
-                S[:, j] = 21.6 + 0.01 * (rng.random(L) > 0.5)
-            elif j == 3:                               # s4: only 5 distinct values
-                S[:, j] = rng.integers(0, 5, L) * 0.1 + 1.0
-            else:
-                off = 50.0 * reg if regimes > 1 else 0.0
-                S[:, j] = j + shift + off + (t / L) ** 2 * (1 + 0.3 * j) + 0.05 * rng.normal(size=L)
-        rows.append(np.column_stack([np.full(L, u), t, ops, S]))
-    return np.concatenate(rows)
-
-
-def write_fake(root: Path, fd="FD001", n_train=7, n_test=5, regimes=1, seed=0, test_shift=0.0):
-    rng = np.random.default_rng(seed)
-    root.mkdir(parents=True, exist_ok=True)
-    train = fake_table(rng, n_train, rng.integers(40, 70, n_train), regimes)
-    tl = rng.integers(10, 50, n_test)                                           # test engines are truncated (some shorter than the window)
-    test = fake_table(rng, n_test, tl, regimes, shift=test_shift)
-    rul = rng.integers(5, 140, n_test)
-    for name, A in (("train", train), ("test", test)):
-        np.savetxt(root / f"{name}_{fd}.txt", A, fmt="%.6f")
-    np.savetxt(root / f"RUL_{fd}.txt", rul, fmt="%d")
-    return train, test, rul
+from nsharness.domains.fake_cmapss import write_fake  # noqa: E402
 
 
 @pytest.fixture
@@ -171,3 +136,19 @@ def test_real_files_have_the_published_shape():
         assert dom.memory.y.max() == 125 and dom.queries["test_last"].Z.shape[0] == cmapss.KNOWN_ENGINES[fd][1]
     d1 = cmapss.build_domain(REAL, "FD001", window=30, cap=125)
     assert d1.info["channels"] == ["s2", "s3", "s4", "s7", "s8", "s9", "s11", "s12", "s13", "s14", "s15", "s17", "s20", "s21"]
+
+
+def test_baselines_and_fake_dataset_generator(tmp_path):
+    from nsharness.baselines import ConstantBaseline, RidgeBaseline
+    from nsharness.domains.fake_cmapss import write_fake_dataset
+    write_fake_dataset(tmp_path, n_train=10, n_test=4)
+    for fd in ("FD001", "FD002", "FD003", "FD004"):
+        dom = cmapss.build_domain(tmp_path, fd, window=8, cap=30)
+        assert len(dom.queries["test_last"]) == 4 and dom.memory.Z.shape[0] > 400
+    mem = dom.memory
+    c = ConstantBaseline().fit(mem)
+    assert np.allclose(c.predict(mem.Z[:5]), mem.y.mean())
+    r = RidgeBaseline(1.0, {"kind": "stats"}).fit(mem)
+    err = lambda p: np.sqrt(np.mean((p - mem.y) ** 2))
+    assert err(r.predict(mem.Z)) < 0.8 * err(c.predict(mem.Z))                      # a trend exists, so ridge must beat the constant
+    assert RidgeBaseline(1e6, {"kind": "stats"}).fit(mem).w.std() < r.w.std()      # heavy regularisation shrinks the weights

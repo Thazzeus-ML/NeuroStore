@@ -207,3 +207,12 @@ def test_calibrate_severity_bisects_and_reports_unreachable():
     assert not ok and s == 1.0 and r == pytest.approx(1.2)
     with pytest.raises(KeyError):
         corruption.corrupt(np.zeros((1, 2, 2), np.float32), "lightning", 0.5, 0)
+
+
+def test_describe_severity_matches_what_corrupt_does(windows):
+    d = corruption.describe_severity("dropout", 0.25, 8)
+    assert d == {"channels_lost": 2, "of": 8} and (~corruption.corrupt(windows, "dropout", 0.25, 1)[1]).sum(1).tolist() == [2] * 40
+    assert corruption.describe_severity("quantize", 1.0, 8) == {"adc_bits": 2} and corruption.describe_severity("quantize", 0.0, 8) == {"adc_bits": 8}
+    assert corruption.describe_severity("combined", 0.5, 10)["channels_lost"] == 2 and corruption.describe_severity("drift", 0.5, 10)["channels_drifting"] == 3
+    for fam in corruption.FAMILIES:
+        assert isinstance(corruption.describe_severity(fam, 0.3, 14), dict)

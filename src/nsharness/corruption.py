@@ -109,3 +109,23 @@ def calibrate_severity(measure, target_ratio: float, lo: float = 0.0, hi: float 
             return float(b), float(rb), True
         prev_s, prev_r = float(s), r
     return float(hi), float(prev_r), False
+
+
+def describe_severity(family: str, severity: float, channels: int) -> dict:
+    """Physical meaning of a severity for a given channel count (what the table in the module docstring says, evaluated)."""
+    s = float(severity)
+    if family == "noise":
+        return {"noise_sigma_z": s}
+    if family == "dropout":
+        return {"channels_lost": int(math.ceil(s * channels - 1e-9)), "of": channels}
+    if family == "stuck":
+        return {"channels_stuck": int(math.ceil(s * channels - 1e-9)), "of": channels}
+    if family == "drift":
+        return {"channels_drifting": int(round(0.3 * channels)), "final_offset_z": 2.0 * s}
+    if family == "spikes":
+        return {"spike_probability": 0.1 * s, "spike_size_z": 5.0}
+    if family == "quantize":
+        return {"adc_bits": max(2, 8 - int(round(6 * s)))}
+    if family == "combined":
+        return {"channels_lost": int(math.ceil(0.4 * s * channels - 1e-9)), "noise_sigma_z": 0.5 * s, "channels_drifting": int(round(0.3 * channels)), "final_offset_z": 2.0 * s}
+    raise KeyError(family)

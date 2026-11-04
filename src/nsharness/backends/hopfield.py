@@ -12,8 +12,8 @@ class HopfieldBackend(ExactBackend):
     reconstruct: `steps` clamped attention updates  xi <- X^T softmax(beta X xi)  that keep observed entries fixed."""
     name = "hopfield"
 
-    def __init__(self, beta=30.0, steps=1, full_attention=True):
-        super().__init__(beta=float(beta), steps=int(steps), full_attention=bool(full_attention))
+    def __init__(self, beta=30.0, steps=1, full_attention=True, metric="cosine"):
+        super().__init__(metric=metric, beta=float(beta), steps=int(steps), full_attention=bool(full_attention))
 
     def _rows(self):
         return int(max(1, min(512, 2e7 // max(self.n, 1))))
@@ -44,7 +44,7 @@ class HopfieldBackend(ExactBackend):
         if not self.cfg["full_attention"]:
             return super().reconstruct(Q, k, mask)
         Q = np.asarray(Q, np.float32)
-        raw = self.Xn * self.norm[:, None]
+        raw = self.X if self.cfg["metric"] == "l2" else self.Xn * self.norm[:, None]
         obs = None if mask is None else np.asarray(mask, bool)
         xi = Q.copy()
         for t in range(self.cfg["steps"]):

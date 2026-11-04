@@ -34,6 +34,21 @@ def test_metric_bundle_known_values():
     assert capped["rmse_capped"] == pytest.approx(1.0) and capped["nasa_sum"] == pytest.approx(40 * (np.exp(0.2) - 1))
 
 
+def test_ratio_and_degradation_helpers():
+    rng = np.random.default_rng(0); y = rng.normal(size=400); g = np.repeat(np.arange(40), 10)
+    a, b = y + 0.2 * rng.normal(size=400), y + 0.4 * rng.normal(size=400)
+    r = tasks.paired_rmse_ratio(y, a, b, g, n_boot=200)
+    assert 0.35 < r["ratio"] < 0.7 and r["hi"] < 1.0 and r["lo"] <= r["ratio"] <= r["hi"]
+    assert tasks.paired_rmse_ratio(y, a, a, g, n_boot=50)["ratio"] == 1.0
+    se_clean, se_bad = (a - y)[None] ** 2, (a + 0.5 - y)[None] ** 2
+    d = tasks.degradation(se_clean, se_bad, g, n_boot=100)
+    assert d["ratio"] > 1.0 and d["lo"] <= d["ratio"] <= d["hi"] and d["rmse_corrupt"] > d["rmse_clean"]
+    robust = (b - y)[None] ** 2, (b + 0.1 - y)[None] ** 2                       # B degrades much less than A
+    diff = tasks.paired_degradation_diff(*robust, se_clean, se_bad, g, n_boot=200)
+    assert diff["diff"] < 0 and diff["hi"] < 0 and diff["excludes_zero"]
+    assert tasks.paired_degradation_diff(se_clean, se_bad, se_clean, se_bad, g, n_boot=50)["diff"] == 0
+
+
 def test_paired_rmse_diff():
     rng = np.random.default_rng(0); y = rng.normal(size=300); g = np.repeat(np.arange(30), 10)
     good, bad = y + 0.1 * rng.normal(size=300), y + 0.5 * rng.normal(size=300)
@@ -131,6 +146,7 @@ def test_completion_eval_beats_mean_imputation_and_flags_nothing_when_nothing_dr
     pipe = Pipeline("exact", {"beta": 20.0}, {"kind": "stats"}, k=5, use_mask=True).fit(world.take(tr), 0)
     r = tasks.completion_eval(pipe, world.Z[qi], 0.3, 1, give_mask=True)
     assert r["nmse"] < 0.8 and r["missing_frac"] == pytest.approx(0.5)            # ceil(0.3 * 4 channels) = 2 channels lost
+    assert r["per_query"].shape == (len(qi),) and np.nanmean(r["per_query"]) == pytest.approx(r["nmse"], rel=1e-6)
     assert np.isnan(tasks.completion_eval(pipe, world.Z[qi], 0.0, 1, give_mask=True)["nmse"])
     with pytest.raises(ValueError):
         tasks.completion_eval(Pipeline("exact", {}, {"kind": "stats", "pca": 3}).fit(world.take(tr), 0), world.Z[qi], 0.3, 1, False)
