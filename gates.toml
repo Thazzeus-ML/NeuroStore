@@ -133,3 +133,33 @@ zipf_s = 1.5
 n_events = 8000
 last_window = 2000
 cv_ratio_max = 0.7        # CV(rates | homeostasis) <= 0.7 * CV(rates | none), every seed
+
+[phase5]
+# Gate 5 (reporting gate): implement the layouts behind one interface with IDENTICAL outputs (property-tested in
+# tests/test_layouts.py), measure the workloads below, and state plainly which hypotheses held.
+# PASS = equivalence tests pass AND every workload below was measured on all 5 seeds AND REPORT.md states a
+# HELD / NOT HELD verdict per hypothesis. A hypothesis failing does NOT fail the gate; it is reported as NOT HELD.
+#
+# Pre-registered hypotheses (compared inside the stated group of layouts):
+#   H1a volley tiles win event-local reads       : workloads rebuild_single, rebuild_batch ; group {aos, soa, volley}
+#   H1b volley tiles win footprint               : workload footprint_bytes (logical bytes) ; group {aos, soa, volley}
+#   H2  plain SoA wins single-field scans        : workload scan_field (sum of strength over all spikes) ; group {aos, soa, volley}
+#   H3a CSR wins out-edge scans                  : workload out_edge_scan ; group {csr, dict}
+#   H3b CSR wins sparse accumulate over synapses : workload sparse_accumulate (32 active units) ; group {csr, dict}
+# Decision rule ("wins"): the predicted layout has the lowest pooled median AND is at least min_margin faster
+# (or smaller) than the runner-up AND has the lowest per-seed median on at least min_seed_wins of 5 seeds.
+# The soa_event control (event_id/t stored once per event) is measured and reported but is NOT a competitor in H1/H2:
+# it exists to show what part of any volley win comes from the tiling itself.
+# Also measured and reported, no hypothesis: append, per-unit history (full scan vs postings), postings build time and
+# bytes, in-edge reads, graph bytes (CSR with transposed index vs dict-of-dicts measured with tracemalloc).
+# Timings: medians (and IQR) over repeats pooled across 5 data seeds. NumPy timings are relative, not absolute.
+description = "layout hypotheses"
+n_events = 200000
+k = 32
+zipf_s = 1.0
+n_append = 20000
+repeats = 15
+repeats_append = 5
+graph_out_degree = 128
+min_margin = 0.10
+min_seed_wins = 4
