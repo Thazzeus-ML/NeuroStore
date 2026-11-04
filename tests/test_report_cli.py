@@ -129,6 +129,30 @@ def test_report_has_every_section_and_no_nan(quick_suite):
             assert c["name"].replace("|", "\\|") in text
 
 
+def test_report_renders_the_flyhash_sweep(quick_suite):
+    text = render_report(quick_suite)
+    assert "FlyHash hyper-parameter sweep vs SimHash" in text and "simhash 1024 bits" in text and "flyhash m=1024 k=32" in text
+
+
+def _c_result(tpr_by_para):
+    from neurostore.report import RENDERERS
+
+    w = WorkloadResult("c", "T", "quick", 0, params={"para_cos": 0.9, "topic_rho": 0.5, "target_fpr": 0.01, "sweep_n_cache": 100})
+    systems = [{"n_cache": 100, "system": "bruteforce_cosine", "family": "ann", "dim": 8, "recall_at_1": 1.0, "tpr_at_fpr": 1.0, "deployed_fpr": 0.01, "ann_agreement": 1.0,
+                "p50_us": 1.0, "qps_single": 1.0, "qps_batch": 1.0, "bytes_per_prompt": 1.0, "bytes_per_prompt_total": 1.0, "build_s": 0.0}]
+    sweep = [{"n_cache": 100, "para_cos": pc, "system": "bruteforce_cosine", "family": "ann", "recall_at_1": 1.0, "tpr_at_fpr": t, "deployed_fpr": 0.01}
+             for pc, t in tpr_by_para.items()]
+    w.tables = {"systems": systems, "hardness_sweep": sweep}
+    return RENDERERS["c"](w)
+
+
+def test_ill_posed_regime_note_names_the_cosines_where_the_exact_scorer_collapses():
+    text = _c_result({0.9: 1.0, 0.8: 0.97, 0.7: 0.0, 0.6: 0.0})
+    assert "Read this table with care below paraphrase cosine ~0.8" in text
+    assert "collapses between paraphrase cosine 0.7 and 0.8" in text and "no system can separate them" in text
+    assert "Read this table with care" not in _c_result({0.9: 1.0, 0.8: 1.0})  # no collapse -> no note
+
+
 def test_report_is_regenerable_from_the_stored_json(quick_suite, tmp_path):
     path = quick_suite.save(tmp_path / "r.json")
     assert render_report(SuiteResult.load(path)) == render_report(quick_suite)

@@ -259,23 +259,34 @@ To use your own data: `neurostore scaffold`, edit `benchmark_workspace/config.js
 
 * **Randomness.** Every random draw comes from an explicit `numpy.random.Generator` seeded from
   `(seed, workload, cell)`; a run is exactly reproducible and changing the seed changes the data.
-* **Intervals.** Binomial proportions use the Wilson score interval; the JSON stores `rate, lo, hi, n`.
+* **Intervals.** Workload A counts *keys*, not queries (conservative Wilson on the number of stored keys, since the
+  20 noisy replicates of a key share its geometry); Workload D uses a t-interval across independent graphs; elsewhere
+  the Wilson score interval. The JSON stores `rate, lo, hi, n` (and `n_clusters` / `n_graphs`).
 * **Thresholds.** `threshold_crossing` applies a running minimum to the (noisy) recall curve before
   locating the 99 % crossing, then interpolates linearly.
-* **Calibration vs test.** Cache hit thresholds are set on a *separate* set of novel prompts.
+* **Matched operating point.** Workload C reads each system's true-hit rate off its ROC at *exactly* the target
+  false-hit rate (randomised Neyman–Pearson tie handling). The deployment-style threshold, fitted on separate
+  calibration prompts, is reported beside it (`deployed FPR`) to show how well a threshold transfers.
 * **Oracles.** Each of these is compared with an independent closed form or Monte-Carlo, both in
   `tests/` and as a `Benchmark self-check` inside every run:
 
   | Quantity measured | Oracle | Agreement observed |
   |---|---|---|
-  | brute-force identification vs flips | exact binomial formula `((b+c)^N − c^N)/(N b)` | within sampling error |
-  | linear-memory BER and `C_max` | `Q(√(D/(N−1)))` | 54.1 vs 54 (`D=512`), 215.0 vs 215 (`D=2048`) |
-  | bundle cleanup SER / capacity | `E[Φ(X)^(V−1)]`, `X ~ N(√(D/N), (N−1)/N)` | 16.0 vs 16, 64.2 vs 63 |
-  | holographic single-hop accuracy | same law | MAP within 1 s.e.; HRR consistently 1–2 points *below* it |
+  | brute-force identification vs flips | exact binomial formula `((b+c)^N − c^N)/(N b)` | max deviation 0.028 over the grid; thresholds 42/45/47 % vs exact 41.8/45.8/47.1 % (`D=512/2048/4096`) |
+  | exact-NN noise tolerance vs store size | same formula | 42/40/39 % measured vs 42/40/39 % (`N=100/1000/10000`) |
+  | linear-memory BER and `C_max` | `Q(√(D/(N−1)))` | 54/109/213/429 vs 54/108/215/429 (`D=512…4096`); worst error 0.9 % |
+  | bundle cleanup SER / capacity | `E[Φ(X)^(V−1)]`, `X ~ N(√(D/N), (N−1)/N)` | 16/32/63/125 vs 16/31/63/126; worst error 4.1 % |
+  | holographic single-hop accuracy | same law | pooled over the transition region: MAP +0.000, HRR −0.010 |
+  | holographic capacity `T_max` (bisection on simulations) | same law, solved for 99 % | measured/theory 0.94–1.07 over 8 cells; mean error 4.2 %, max 7.5 % |
   | ideal crossbar | digital matrix product | max error 0 |
 
 * **Known model gap.** Unitary-HRR sits 1–2 accuracy points under the Gaussian capacity law (MAP does
-  not); the self-check tolerance (±0.03 pooled) accommodates it and the report states it.
+  not), i.e. about 6 % lower capacity (597 vs 637 at `D=16384`); the self-check tolerances accommodate it and
+  the report states it.
+* **Independent review.** The code was read, cold and read-only, by a separate reviewer who was given the
+  source but none of the conclusions; each finding was verified before acting on it. It led to the gated
+  scorecard, the matched-FPR comparison, the capacity bisection, the honest memory accounting, and the discovery
+  that the inverse permutation was being recomputed on every hop (71 % of a hop at `D=8192`).
 
 ---
 
@@ -321,7 +332,114 @@ entries) and `checks` (spec targets, or `Benchmark self-check: ...` for oracle c
 
 ## 10. Results of the reference run
 
-See [`results/standard/REPORT.md`](results/standard/REPORT.md) (generated) and the interpretation
-below.
+Raw data and the generated report: [`results/standard/`](results/standard/) (`results.json`, `REPORT.md`; provenance in
+[`results/README.md`](results/README.md)). One machine (4 × Xeon @ 2.1 GHz), one thread, Python/NumPy implementations of
+the neural primitives against native FAISS/RocksDB/Redis. Revision `3a14086`, ~25 minutes, every self-check passed.
+Everything below is a statement about *this* evidence; §8 lists what it cannot show.
 
-<!-- RESULTS-SUMMARY-PLACEHOLDER -->
+### The short version
+
+* **Where NeuroStore's primitives work, they work as the theory says.** All seven closed-form self-checks agree with the
+  measurements (§7). The claims in the spec about robustness are real: a Hopfield attractor recovers keys at 42–47 % bit
+  flips where RocksDB, Redis and a dict recover nothing at 1 %; VSA completes records from a cue with a wrong field
+  where exact indexes return nothing; HD search survives large analogue noise.
+* **But the robustness is a property of *similarity search*, not of neural coding.** Exact nearest-neighbour search has the
+  same noise tolerance (it is the information-theoretic ceiling: 41.8 / 45.8 / 47.1 % at `D=512 / 2048 / 4096`, `N=100`)
+  and the Hopfield memory can only match it (the iterated attractor does; the single-step reference readout falls
+  4–7 points short). On the scorecard the quality rows are 3 wins (all against exact-match stores, which cannot succeed
+  by construction), 9 ties and **0 losses**.
+* **On cost, NeuroStore loses on a CPU.** Among systems that do the job, the cost rows are 5 wins and 14 losses. The
+  wins are each over *one* competing family in a row where another family is still ahead (robust LSH on write latency and
+  memory, but exact packed search beats both; SimHash scans on throughput, but HNSW is faster; float32 vectors on cache memory,
+  but SimHash-512 is 4× smaller). Against the best system in each row the losses run from
+  **2.7× (cache throughput vs HNSW) to ~4 800× (batched graph hops)** in latency/throughput and from **4× to ~1 850×** in memory (the build-time rows are also lost, trivially: an exact scan has no index to build).
+  Nothing here supports "outperforms" claims on speed or density in software.
+
+### Workload A — noisy telemetry key retrieval
+
+* **Noise tolerance (≥ 99 % exact recall, `N=100`)**: exact NN / FAISS flat / Qdrant **42 / 45 / 47 %**; Hopfield
+  iterated (5 attractor steps) **42 / 45 / 47 %** (ties the ceiling); Hopfield single-step (the reference) 38 / 40 / 40 %;
+  bit-sampling LSH 28 % at `k=8, L=64` but **42 / 45 / 46 %** at `k=5, L=256`; datasketch 22–25 %; dict / RocksDB / Redis 0 %.
+  LSH noise tolerance is a tuning knob — the tolerant setting reaches the ceiling and pays for it (below).
+* **Softmax blending is the single-step weakness.** Identification is β-independent (40 % on the 2 % grid) but exact value recovery needs
+  β ≥ 32 in one step, or β ≥ 16 with five attractor steps (β=20, 40 % noise: 28 % → 100 %). The reference harness's
+  single readout never exercises the attractor dynamics the spec describes.
+* **Scale hurts tolerance, as the formula says**: 42 → 40 → 39 % for `N=100 → 1 000 → 10 000`. Approximate indexes
+  lose more: FAISS binary HNSW at `efSearch=64` drops to **26 %** at `N=10 000`; it takes `efSearch=256` (250 µs/query) to
+  recover the 39 % ceiling — 9× slower than exact FAISS flat (27 µs) at that size.
+* **Cost at `N=10 000`, `D=512` (reads of 10 %-noisy keys, 1 thread)**: dict 0.29 µs, RocksDB 4.9 µs, FAISS flat **27 µs**,
+  Redis 65 µs (TCP), brute-force packed Hamming 274 µs, Hopfield single-step 1.6 ms, robust LSH 5.9 ms, **Hopfield
+  iterated 7.8 ms**, Qdrant (embedded) 9.2 ms. Memory per pair: packed exact NN / FAISS flat 128 B (η = 1.00), dict 223 B,
+  RocksDB 139 B, Redis 224 B, HNSW 400 B, **Hopfield 4 100 B (η = 0.031 — float32 storage of ±1 bits)**, LSH 2.6–9.4 KB.
+  Writes: Hopfield 4 µs, FAISS flat 2 µs, HNSW 330 µs, Redis 75 µs.
+* **Reading**: the accuracy-gated comparison pits iterated Hopfield (7.8 ms) against exact FAISS flat (27 µs): **~290× slower**,
+  and 32× larger than a bit-packed store. (Without gating, the single-step variant looks 5× faster than that — and 6 points
+  less tolerant; the earlier reference-run scorecard mixed the two.)
+
+### Workload B — record completion and entity resolution
+
+* **Accuracy** (`M=5 000`, `F=8`, vocab 500, `D=4096`): with clean cues VSA identifies and reconstructs 100 %, identical to
+  every exact method. With **one wrong cue field** (`K=3`) VSA reaches **97.4–97.6 %** vs fuzzy scan 96.0 % (tie; ties in
+  the table break arbitrarily for both) vs **0 %** for inverted index, linear scan and composite indexes. VSA needs
+  `D ≥ 1024` for this (`D=512`: 91 % / 82 %). The unbound-filler cosine is ≈ 0.27 independent of `D`.
+* **The original harness's method is chance** (cosine 0 ± 1/√D; 0 % pass the 0.6 bar at every `D`).
+* **Cost**: 3.4 ms vs 18–34 µs per query (100–194×); **29.5 KB per record** vs 16–54 B (the item memories are included;
+  bit-packed it would be 922 B/record, η = 0.0097 vs 0.56 for the table). The spec's "O(1) query steps" is true of the operation
+  count; the dense `O(M·D)` scan is what runs.
+* **The `2^F` index claim is real but overstated.** All-subset composite indexes would need 255 indexes; for `K=2…4` they cost
+  18–61 MiB as Python dicts (1.1–4.0 MiB as compact arrays) vs **188 KiB** for one inverted index per column. A standard
+  engine never builds them; the inverted index + intersection is the practical rival and it is cheap.
+
+### Workload C — semantic prompt cache (FlyHash vs the rest), `N = 10 000`, `d = 128`, synthetic embeddings
+
+* **Recall@1 on paraphrases (cosine 0.9) is 100 % for every semantic system, true-hit rate at exactly 1 % false hits ≥ 99.6 %**
+  (98.4 % at `N=50 000`); the exact-match hash finds 0 %.
+* **Speed**: FAISS HNSW **21 100 q/s** (44 µs); FlyHash inverted index 7 900 q/s (117 µs); FlyHash + binary HNSW 6 800; exact cosine
+  scan 5 400 single-query (47 700 batched); SimHash-512 scan 3 000. At `N=50 000`: HNSW 10 700, FlyHash inverted 2 000. FlyHash's
+  sparsity pays off only as an inverted index (6× over its own popcount scan at 10k); it never beats HNSW (2.7× faster at 10k, 5× at 50k).
+* **Memory**: FlyHash 258 B index / 361 B with its projection vs 512 B float vs HNSW 784 B vs SimHash-512 90 B. Build: FlyHash inverted
+  1.0 s vs HNSW 10.2 s at `N=50 000`.
+* **Sub-microsecond lookup is not met** (at `N=10 000` the best semantic p50 is 44 µs, FAISS HNSW; FlyHash 117 µs). The only sub-µs system is the exact hash
+  (0.3 µs), which recognises 0 % of paraphrases.
+* **FlyHash is a lossier code than SimHash at equal bits.** Recall@1 at paraphrase cosine 0.6: FlyHash `m=2048,k=64` 61.4 % vs
+  SimHash-2048 99.8 % (SimHash-512, one quarter of the bits, 89.3 %). The hyper-parameter sweep gives FlyHash every chance: a larger
+  expansion and 5 % winners reach 92.6–97.2 % but at 3–6× the memory of SimHash-2048. A difficulty-matched check across intrinsic
+  dimensions 8–128 ([`results/exploratory/flyhash_intrinsic_dim.md`](results/exploratory/flyhash_intrinsic_dim.md)) does not reverse the
+  ordering. The caveat is the data: embeddings are synthetic Gaussian mixtures; FlyHash may behave differently on real sentence embeddings
+  (use `embeddings_npz`).
+* **Ill-posed regime**: below paraphrase cosine ≈ 0.8 even exact cosine scan cannot separate paraphrases from same-topic novel prompts at 1 %
+  false hits (the report explains why); recall@1 remains meaningful.
+
+### Workload D — holographic graph walking
+
+* **A single trace holds `T_max ≈ D / 26` triples** at 99 % single-hop accuracy for `E=100` entities: measured (bisection) 86 / 164 / 328 / 627 (MAP)
+  and 76 / 160 / 298 / 597 (HRR) for `D = 2 048 … 16 384`, against 80 / 159 / 318 / 637 from the closed form. Beyond capacity the
+  ghost-node rate rises smoothly (`T=1 600, D=2 048`: 10 % correct) and multi-hop accuracy compounds (`T=400, D=8 192`: 97 % → 84–88 % over 5 hops).
+* **Direction is encoded** (reverse hit rate 0.9–1.1 % ≈ chance 1 %) — after fixing the cyclic-shift trap (§4).
+* **Speed and size**: 3.1 hops/ms vs 4 425 for a dict (`E=1 000, D=2 048`; **~1 400× slower**), 0.34 hops/ms at `E=10 000`; batched 26.8 vs 127 872
+  for a numpy successor table. Memory ≈ **267 KB per triple at capacity** vs 161 B (item memory dominates). Only parallel in-memory hardware could change this.
+
+### Capacity and density (`C_max`, η)
+
+* Linear matrix: **54 / 109 / 213 / 429** items at BER ≤ 0.1 % for `D = 512 … 4 096` (= D / 9.55), η ≈ 0.0065. VSA bundle read *with cleanup*: **16 / 32 / 63 / 125**
+  (η ≈ 6·10⁻⁵); read bit-by-bit it is already at 31 % BER with 5 items. The explicit Hopfield store never saturates (≥ 10 000 tested) because it spends
+  `N × D` float32 cells (η = 1/32).
+
+### Section 5 — compute-in-memory
+
+* **Accuracy (emulated)**: with 1 000 keys, `D=2 048` and 20 % query noise, identification stays ≥ 99 % up to read noise of 20 % of a tile's full scale,
+  programming noise of 40 % and 20 % stuck cells (the largest values swept) and a 2-bit ADC; a combined realistic scenario (2 % read noise, 8-bit ADC, 5 % programming noise, 1 % stuck cells,
+  drift with compensation) is 100 %. Tolerance to *per-read* noise grows with `D`; at `D=512` with 35 % query noise it needs a 4-bit ADC.
+* **Latency (modelled, not measured)**: against the *fastest* CPU path here (FAISS binary flat), the model projects 170–10 000× under optimistic device
+  timings but **6–9×** under conservative ones, because once tiles outnumber arrays the waves serialise and the advantage stops growing with size.
+  The assumptions, not the physics, decide the answer; replace the illustrative timing parameters with array characterisation data before quoting a number.
+
+### What this does and does not show
+
+* **Shown**: the primitives are correct and behave as theory predicts; similarity search tolerates corrupted keys and cues, which exact-match stores cannot;
+  the benchmark itself is validated against closed forms; the originally supplied harness could not have shown any of this (§4).
+* **Not shown**: a speed, memory or accuracy advantage over exact or approximate nearest-neighbour search in software. In every cost comparison among
+  systems that do the job, the specialised native baseline wins by a wide margin, and FlyHash does not beat SimHash or HNSW on this data.
+* **Not tested**: real embeddings and real telemetry; stores beyond 10⁵; multi-threaded or GPU implementations; actual crossbar hardware. The
+  neural primitives' unrealised potential (bit-packed storage, popcount kernels, parallel analogue search) is exactly what the CIM model gestures at and
+  what a hardware evaluation would have to measure.

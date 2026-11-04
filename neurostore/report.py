@@ -189,8 +189,29 @@ def _render_c(w: WorkloadResult) -> str:
         cs = sorted({r["para_cos"] for r in sw}, reverse=True)
         out.append(f"**Recall@1 vs paraphrase strength** (N={n:,}): how fast each system degrades as paraphrases drift from their source.\n")
         out.append(_pivot(sw, "system", "para_cos", lambda r: pct(r["recall_at_1"], 1), cols_order=cs, corner="system"))
-        out.append("\n**True-hit rate at the calibrated false-hit rate** (same sweep):\n")
+        out.append(f"\n**True-hit rate at exactly {cfg['target_fpr'] * 100:g}% false hits** (same sweep):\n")
         out.append(_pivot(sw, "system", "para_cos", lambda r: pct(r["tpr_at_fpr"], 1), cols_order=cs, corner="system"))
+        bf = [r for r in sw if r["system"] == "bruteforce_cosine"]
+        below = [r["para_cos"] for r in bf if r["tpr_at_fpr"] < 0.5]
+        above = [r["para_cos"] for r in bf if r["tpr_at_fpr"] >= 0.5]
+        if below and above:
+            out.append(f"\nRead this table with care below paraphrase cosine ~{min(above):g}. Novel prompts from the cache's own topics sit at cosine ~topic_rho = {cfg['topic_rho']:g} to each other, so the "
+                       f"nearest cached neighbour of a novel prompt is already quite similar; here the exact-cosine true-hit rate collapses between paraphrase cosine {max(below):g} and {min(above):g}. "
+                       "Once a paraphrase is no more similar to its source than a novel prompt is to its nearest neighbour, **no system can separate them at this false-hit rate** (the task is "
+                       "ill-posed there; it is not a defect of any one system), and a noisier code can score slightly above an exact one by chance because every positive sits at exactly the stated cosine. "
+                       "Recall@1 (previous table) is unaffected: the nearest cached prompt is still the right one.\n")
+    fs = w.tables.get("flyhash_sweep", [])
+    if fs:
+        paras = sorted({r["para_cos"] for r in fs}, reverse=True)
+        out.append("\n**FlyHash hyper-parameter sweep vs SimHash at the same number of bits** (expansion m, winners k incl. ~5% of the original paper, fan-in density; "
+                   f"N={w.params.get('sweep_n_cache'):,}). `B/prompt` is the inverted-index / packed-code size. FlyHash is given every chance; SimHash is the plain random-hyperplane code.\n")
+        keys = list(dict.fromkeys((r["kind"], r["bits"], r["k"], r["density"]) for r in fs))
+        body = []
+        for kind, bits, k, dens in keys:
+            sel = {r["para_cos"]: r for r in fs if (r["kind"], r["bits"], r["k"], r["density"]) == (kind, bits, k, dens)}
+            label = f"flyhash m={bits} k={k} ({k / bits * 100:.1f}%) fan-in {dens:g}" if kind == "flyhash" else f"simhash {bits} bits"
+            body.append([label, num(next(iter(sel.values()))["bytes_per_prompt"], 0)] + [pct(sel[p]["recall_at_1"], 1) for p in paras] + [pct(sel[p]["tpr_at_fpr"], 1) for p in paras])
+        out.append(md_table(["code", "B/prompt"] + [f"recall@1 @{p:g}" for p in paras] + [f"TPR@FPR @{p:g}" for p in paras], body))
     return "\n".join(out)
 
 
@@ -215,7 +236,8 @@ def _render_d(w: WorkloadResult) -> str:
     out.append(f"\n**Multi-hop path accuracy** (D={d_show}; success = every hop of the walk correct; errors compound):\n")
     sel = [r for r in cap if r["dim"] == d_show]
     out.append(md_table(["algebra", "T"] + [f"{h}-hop" for h in hops], [[r["algebra"], r["triples"]] + [pct(r[f"path_acc_h{h}"], 1) for h in hops] for r in sorted(sel, key=lambda x: (x["algebra"], x["triples"]))]))
-    out.append("\n**Traversal speed and memory** (a graph far inside capacity -- this measures cost, not accuracy):\n")
+    out.append("\n**Traversal speed and memory** (graph sized to 70% of the closed-form capacity at each (D, E) and at most 100 triples, so the timed memory is an accurate one; "
+               "hop time itself does not depend on the number of triples):\n")
     out.append(md_table(["system", "D", "E", "triples", "hops/ms (1 query)", "hops/ms (batch)", "bytes/triple (as built)", "bytes/triple at 99% capacity", "trace bytes", "allocated"],
                         [[r["system"], r["dim"] or "-", r["n_entities"], r["triples"], sig(r["hops_per_ms_single"]), sig(r["hops_per_ms_batch"]), num(r["bytes_per_triple"], 0),
                           num(r.get("bytes_per_triple_at_capacity"), 0) if r.get("bytes_per_triple_at_capacity") else "-", num(r["trace_bytes"], 0), fmt_bytes(r["memory_bytes"])]
