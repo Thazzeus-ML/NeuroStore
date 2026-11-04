@@ -1,0 +1,22 @@
+# Pre-registered gates. Thresholds here are read by the experiment scripts
+# (eval/gates.py). A phase's table is committed BEFORE any experiment for that
+# phase runs. Thresholds are never edited after the fact; a failed gate stays failed.
+#
+# Seeds: gate runs use seeds 0..4 (n_seeds = 5). Seeds >= 100 are "dev seeds" used for
+# debugging and hyper-parameter choice; they never appear in gate numbers.
+
+[global]
+gate_seeds = [0, 1, 2, 3, 4]
+dev_seeds  = [100, 101, 102]
+
+[phase0]
+# Gate 0: generator is deterministic per seed and matches its documented statistics.
+description = "generator determinism + documented statistics"
+n_events_stats          = 50000
+determinism_seeds       = [0, 1, 2, 3, 4]
+tol_mean_concepts_rel   = 0.02   # |empirical - 1.5| / 1.5
+tol_mean_features_rel   = 0.03   # single-concept events, vs analytic M*p + noise*(1-M*p/F)
+tol_chain_tv            = 0.03   # TV distance, empirical primary-concept freq vs stationary dist
+tol_self_transition_abs = 0.015  # P(primary_{t+1}==primary_t) vs analytic sum_i pi_i P_ii
+drift_members_exact     = true   # exactly round(drift_frac*M) members replaced per concept
+require_all_seeds       = true   # every one of the 5 seeds must satisfy every criterion
