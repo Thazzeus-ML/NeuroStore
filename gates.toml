@@ -39,3 +39,33 @@ raw_feature_regimes      = [200, 800, 3200]  # F values; bytes/event must be ide
 k_values                 = [16, 32, 64]      # bytes/event must follow the formula for each k
 overlap_margin_min       = 0.10   # mean(same-concept overlap) - mean(different-concept overlap), every seed
 overlap_pairs            = 20000
+
+[phase2]
+# Gate 2: partial-cue recovery. Per seed: default world (no drift, uniform popularity), encoder
+# with theta = 0 (no homeostasis), UNGATED log, no synapses yet. NeuroStore learns assemblies
+# in one pass over the train stream (batch consolidation, every event replayed).
+# Test events are held out; a fraction `mask` of each test code's active units is removed at
+# random (seeded) and the rest is the cue.
+#   (a) concept recovery: mean set-F1 of recovered vs true concept set (1-3 concepts).
+#   (b) masked-unit recovery: precision@m, m = number of masked units; completion excludes cue units.
+# Ground-truth labels are used only to NAME clusters/neighbours (assembly -> concept map, and the
+# labels of neighbours) -- identically for NeuroStore and the references.
+# Read-out hyper-parameters (grids fixed here) are chosen per mask level on the VALIDATION stream.
+# Competitors: exact-match = hash of the cue code looked up among hashes of full stored codes
+# (miss -> global majority fallback); reference = brute-force Jaccard kNN (k_nn and vote threshold
+# chosen on validation) over all stored train codes.
+description = "assembly vote vs exact-match and brute-force Jaccard-kNN under partial cues"
+n_train = 6000
+n_val   = 1000
+n_test  = 1500
+masks   = [0.3, 0.5, 0.7]
+# Pass conditions, BOTH metrics at EVERY mask level, mean over seeds 0-4:
+beat_exact_margin_abs   = 0.05          # NS metric >= exact-match metric + margin, on the mean AND on every seed
+approach_ratio          = {0.3 = 0.90, 0.5 = 0.90, 0.7 = 0.80}   # NS metric >= ratio * kNN-reference metric (mean over seeds)
+# cost (query latency, index bytes, build time) is reported, not gated.
+grid_ns_rho        = [0.5, 0.7, 0.85]
+grid_ns_cos_min    = [0.05, 0.10, 0.15, 0.20]
+grid_ns_map_thr    = [0.3, 0.5]
+grid_ns_complete_a = [1, 2, 3]
+grid_nn_k          = [1, 3, 5, 10]
+grid_nn_vote_thr   = [0.3, 0.5, 0.7]
