@@ -28,7 +28,7 @@ class HolographicGraphMemory:
     ``D / (2 ln E)``. :func:`neurostore.theory.holographic_capacity` gives the analytic bound.
 
     The item memory (entity/relation codebooks) is part of the system: it is what makes the
-    cleanup possible and it dominates the footprint -- :meth:`memory_bytes` reports both.
+    cleanup possible and it dominates the footprint -- :meth:`memory_bytes` reports everything allocated.
     """
 
     name = "holographic_graph"
@@ -102,10 +102,21 @@ class HolographicGraphMemory:
         return visited
 
     # ------------------------------------------------------------------ memory
+    def _array_names(self, query_path_only: bool = False) -> list[str]:
+        if query_path_only:  # what answering a query reads (write-path copies such as rho^2(entities) are not needed)
+            base = ["memory", "entities", "_rel_p", "_ent_norms"]
+            return base + (["_f_ent", "_f_rel_p", "_f_mem"] if self.algebra == "hrr" else [])
+        base = ["memory", "entities", "relations", "_rel_p", "_ent_p2", "_ent_norms"]
+        return base + (["_f_ent", "_f_rel_p", "_f_ent_p2", "_f_mem"] if self.algebra == "hrr" else [])
+
     def trace_bytes(self) -> int:
         """Bytes of the single superposed memory vector (the 'graph' itself)."""
         return int(self.memory.nbytes)
 
     def memory_bytes(self) -> int:
-        """Trace + entity and relation item memories (all needed to answer queries)."""
-        return int(self.memory.nbytes + self.entities.nbytes + self.relations.nbytes)
+        """Every array this object holds (trace, item memories, permuted copies, HRR spectra): as allocated."""
+        return int(sum(getattr(self, n).nbytes for n in self._array_names()))
+
+    def query_path_bytes(self) -> int:
+        """Lower bound: only the arrays a hop reads (a leaner implementation could drop the write-path copies)."""
+        return int(sum(getattr(self, n).nbytes for n in self._array_names(query_path_only=True)))

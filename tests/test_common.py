@@ -123,6 +123,28 @@ def test_proportion_dict():
     assert p["rate"] == 0.9 and p["k"] == 90 and p["n"] == 100 and p["lo"] < 0.9 < p["hi"]
 
 
+def test_cluster_proportion_counts_keys_not_queries():
+    """20 noisy replicates of each of 100 keys are not 2000 independent trials when failures are key-driven."""
+    cluster = np.repeat(np.arange(100), 20)
+    key_driven = (cluster >= 5).astype(float)  # 5 keys always fail, 95 never: replicates carry no extra information
+    cp = C.cluster_proportion(key_driven, cluster)
+    naive = C.wilson_interval(int(key_driven.sum()), key_driven.size)
+    assert cp["rate"] == pytest.approx(0.95) and cp["n_clusters"] == 100 and cp["n"] == 2000
+    assert (cp["hi"] - cp["lo"]) > 3 * (naive[1] - naive[0])  # the naive interval is several times too narrow
+    assert cp["lo"] < 0.95 < cp["hi"]
+    # when every trial is its own cluster it IS the ordinary Wilson interval
+    solo = C.cluster_proportion(key_driven[:50], np.arange(50))
+    assert (solo["lo"], solo["hi"]) == pytest.approx(C.wilson_interval(int(key_driven[:50].sum()), 50))
+
+
+def test_mean_interval_uses_a_t_interval_across_replicates():
+    mi = C.mean_interval([0.9, 0.95, 1.0])
+    assert mi["mean"] == pytest.approx(0.95) and mi["n"] == 3 and mi["sd"] == pytest.approx(0.05)
+    assert mi["hi"] - mi["mean"] == pytest.approx(4.303 * 0.05 / np.sqrt(3), rel=1e-3)  # df=2 -> t = 4.303
+    one = C.mean_interval([0.5])
+    assert one["mean"] == 0.5 and one["lo"] is None and one["sd"] is None
+
+
 def test_normal_cdf_and_sf():
     assert float(C.norm_cdf(0.0)) == pytest.approx(0.5)
     assert float(C.norm_cdf(1.96)) == pytest.approx(0.975, abs=1e-4)

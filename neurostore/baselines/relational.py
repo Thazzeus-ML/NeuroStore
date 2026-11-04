@@ -127,8 +127,12 @@ class InvertedIndexIntersect(_Base):
                 out[q] = res.min()
         return out
 
-    def memory_bytes(self) -> int:
+    def index_bytes(self) -> int:
         return int(sum(a.nbytes for a in self._order) + sum(a.nbytes for a in self._start))
+
+    def memory_bytes(self) -> int:
+        """Posting lists plus the base table that ``reconstruct`` reads (as allocated)."""
+        return self.index_bytes() + int(self.records.nbytes)
 
 
 class CompositeIndexSet(_Base):
@@ -166,5 +170,16 @@ class CompositeIndexSet(_Base):
             out[q] = self.indexes[subset].get(key, -1)
         return out
 
-    def memory_bytes(self) -> int:
+    def index_bytes(self) -> int:
+        """Python dict-of-tuples indexes as implemented (deep size)."""
         return deep_sizeof(self.indexes)
+
+    def compact_bytes(self) -> int:
+        """What the same indexes would cost as sorted arrays of (K x field-width key, int32 row id) -- the fair
+        representation to compare with the numpy posting lists; the C(F,K)-vs-F scaling is representation-independent."""
+        entry = self.subset_size * self.records.dtype.itemsize + 4
+        return int(self.n_indexes * self.n_records * entry)
+
+    def memory_bytes(self) -> int:
+        """Indexes as implemented plus the base table (as allocated)."""
+        return self.index_bytes() + int(self.records.nbytes)

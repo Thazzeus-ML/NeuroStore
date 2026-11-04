@@ -195,16 +195,19 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
         res.tables["latency_memory"] = lat_rows
 
         blow = []
-        per_index = {k: composites[k].memory_bytes() / composites[k].n_indexes for k in composites}
+        per_index = {k: composites[k].index_bytes() / composites[k].n_indexes for k in composites}
+        itemsize = table.dtype.itemsize
         for k in cfg["k_values"]:
             n_idx = math.comb(f, k)
             blow.append({"F": f, "K": k, "n_indexes_for_K": n_idx, "n_indexes_any_subset": 2**f - 1,
-                         "composite_bytes": composites[k].memory_bytes() if k in composites else None,
+                         "composite_bytes": composites[k].index_bytes() if k in composites else None,
                          "composite_bytes_extrapolated": (per_index[k] * n_idx) if k in composites else
                          (np.mean(list(per_index.values())) * n_idx if per_index else None),
                          "composite_measured": k in composites,
-                         "inverted_bytes": index.memory_bytes(), "table_bytes": table.nbytes,
-                         "vsa_record_bytes_by_dim": {str(d): s.record_bytes() for d, s in stores.items()}})
+                         # the same indexes as sorted arrays of (K field-width keys + int32 row id): representation-independent scaling
+                         "composite_compact_bytes": n_idx * m * (k * itemsize + 4),
+                         "inverted_bytes": index.index_bytes(), "table_bytes": table.nbytes,
+                         "vsa_record_bytes_by_dim": {str(d): s_.record_bytes() for d, s_ in stores.items()}})
         res.tables["index_blowup"] = blow
         for s in stores.values():
             s.binarize_cue = False
@@ -263,12 +266,18 @@ def _checks_and_headlines(cfg: dict[str, Any], res: WorkloadResult, entropy_bits
         for r in rows:
             if r["K"] == k3 and r["corrupt"] == c and (r["dim"] in (dmax, None)):
                 sysd[r["system"]] = (100 * r["ident_rate"], r["family"])
-        heads.append(headline(f"Record identification accuracy ({label})", "%", True, ctx, sysd))
+        heads.append(headline(f"Record identification accuracy ({label})", "%", True, ctx, sysd, kind="quality"))
     sysd = {r["system"]: (100 * r["recon_rate"], r["family"]) for r in rows if r["K"] == k3 and r["corrupt"] == 0 and r["dim"] in (dmax, None)}
-    heads.append(headline("Missing-field reconstruction accuracy (clean cue)", "%", True, ctx, sysd))
+    heads.append(headline("Missing-field reconstruction accuracy (clean cue)", "%", True, ctx, sysd, kind="quality"))
     lat = [r for r in res.tables["latency_memory"] if r["p50_us"] is not None]
     c2 = f"K={cfg['latency_k']}, D={cfg['latency_dim']}, M={cfg['n_records']}, 1 thread"
-    heads.append(headline("Query latency p50 (identify + reconstruct)", "us", False, c2, {r["system"]: (r["p50_us"], r["family"]) for r in lat}))
-    heads.append(headline("Memory per stored record (as allocated)", "bytes", False, c2, {r["system"]: (r["bytes_per_record"], r["family"]) for r in lat}))
+    # Cost is compared only between systems that can serve a cue with one wrong field: >= 95% reconstruction accuracy there.
+    kq = cfg["latency_k"]
+    robust = {r["system"]: r["recon_rate"] for r in rows if r["K"] == kq and r["corrupt"] == 1 and r["dim"] in (cfg["latency_dim"], None)}
+    gate = f"reconstructs the unknown field with >= 95% accuracy when one of the K={kq} cue values is wrong"
+    ok = {r["system"]: robust.get(r["system"], 0.0) >= 0.95 for r in lat}
+    heads.append(headline("Query latency p50 (identify + reconstruct)", "us", False, c2, {r["system"]: (r["p50_us"], r["family"], ok[r["system"]]) for r in lat}, kind="cost", gate=gate))
+    heads.append(headline("Memory per stored record (as allocated, incl. item memories / base table)", "bytes", False, c2,
+                          {r["system"]: (r["bytes_per_record"], r["family"], ok[r["system"]]) for r in lat}, kind="cost", gate=gate))
     res.headlines = heads
     res.summary = {"entropy_bits_per_record": entropy_bits / cfg["n_records"], "primary_dim": dmax, "K": k3}

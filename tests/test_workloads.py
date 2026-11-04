@@ -46,7 +46,8 @@ def test_each_workload_returns_a_complete_json_serialisable_result(quick_suite, 
         assert set(c) >= {"name", "target", "measured", "passed", "kind"} and c["kind"] in ("spec", "selfcheck", "info")
     for h in res.headlines:
         assert set(h) >= {"metric", "unit", "higher_is_better", "context", "systems"} and h["systems"]
-        assert all(set(s) == {"value", "family"} for s in h["systems"].values())
+        assert all(set(s) == {"value", "family", "passes"} for s in h["systems"].values())
+        assert h["kind"] in ("quality", "cost") and (h["kind"] == "quality" or h["gate"])  # every cost row says what accuracy it requires
     assert res.skipped == []  # include_external=False in the fixture, and every internal system must run
 
 
@@ -86,6 +87,29 @@ def test_workload_a_measures_what_it_claims(quick_suite, quick):
     assert {r["system"] for r in res.tables["latency_memory"]} >= {hop, "python_dict", "bruteforce_hamming", "lsh_k8_L32"}
     for r in res.tables["latency_memory"]:
         assert r["read_p50_us"] > 0 and r["write_p50_us"] > 0 and 0 < r["eta"] <= 1.0 and r["memory_bytes"] > 0
+
+
+def test_workload_a_cost_rows_are_gated_by_noise_tolerance(quick_suite):
+    cost = [h for h in quick_suite.get("a").headlines if h["kind"] == "cost"]
+    assert len(cost) == 3
+    for h in cost:
+        s = h["systems"]
+        assert s["python_dict"]["passes"] is False  # an exact-match store tolerates 0% noise: it cannot be a latency/memory competitor
+        assert s["bruteforce_hamming"]["passes"] is True  # the ceiling passes its own gate by definition
+    iterated = [h["systems"]["hopfield_b20_s3"]["passes"] for h in cost]
+    assert len(set(iterated)) == 1  # the same systems pass for every cost metric: no row mixes operating points
+
+
+def test_workload_b_cost_rows_are_gated_by_corrupted_cue_robustness(quick_suite):
+    cost = [h for h in quick_suite.get("b").headlines if h["kind"] == "cost"]
+    assert len(cost) == 2
+    acc = {r["system"]: r["recon_rate"] for r in quick_suite.get("b").tables["accuracy"] if r["K"] == 3 and r["corrupt"] == 1 and r["dim"] in (1024, None)}
+    for h in cost:
+        s = h["systems"]
+        assert s["inverted_index"]["passes"] is False and s["linear_scan"]["passes"] is False  # exact match dies on a wrong field
+        for name, entry in s.items():  # the flag IS the 95% test on the accuracy table (fuzzy scan is only ~93% on the tiny quick data)
+            assert entry["passes"] == (acc.get(name, 0.0) >= 0.95), name
+    assert acc["vsa_map"] > 0.5 and acc["fuzzy_scan"] > acc["linear_scan"]
 
 
 def test_workload_a_iterated_attractor_is_at_least_as_robust_as_the_single_step(quick_suite):
@@ -156,7 +180,7 @@ def test_workload_c_ranks_the_systems_as_expected(quick_suite):
         assert s["flyhash_scan_1024_32"]["recall_at_1"] > 0.9 and s["flyhash_inv_1024_32"]["recall_at_1"] == s["flyhash_scan_1024_32"]["recall_at_1"]
         assert s["bruteforce_cosine"]["ann_agreement"] == 1.0
         assert s["exact_hash"]["p50_us"] == min(r["p50_us"] for r in s.values())  # a dict lookup is the latency floor
-        assert 0 <= s["flyhash_scan_1024_32"]["realised_fpr"] <= 0.15
+        assert 0 <= s["flyhash_scan_1024_32"]["deployed_fpr"] <= 0.3 and s["flyhash_scan_1024_32"]["bytes_per_prompt_total"] > s["flyhash_scan_1024_32"]["bytes_per_prompt"]
         assert s["flyhash_scan_1024_32"]["bytes_per_prompt"] == 128 and s["simhash_1024"]["bytes_per_prompt"] == 128
     sweep = res.tables["hardness_sweep"]
     bf = {r["para_cos"]: r["recall_at_1"] for r in sweep if r["system"] == "bruteforce_cosine"}
@@ -180,6 +204,31 @@ def test_REGRESSION_c_sweeps_share_the_corpus_and_the_topics_of_the_main_evaluat
     assert hardness(main) > 0.5
 
 
+def test_np_threshold_hits_the_target_false_hit_rate_exactly_even_with_ties():
+    from neurostore.workloads.c_prompt_cache import accept_prob, np_threshold
+
+    rng = np.random.default_rng(3)
+    for neg in (rng.random(2000), rng.integers(0, 12, 2000).astype(float), np.zeros(500), rng.integers(0, 3, 777).astype(float)):
+        for fpr in (0.005, 0.01, 0.1):
+            tau, gamma = np_threshold(neg, fpr)
+            assert 0.0 <= gamma <= 1.0
+            assert accept_prob(neg, tau, gamma).mean() == pytest.approx(fpr, abs=1e-12)  # expected FPR is exactly the target
+    # the plain `score > quantile` rule misses a coarse-score target by a factor of several; the randomised rule does not
+    coarse = rng.integers(0, 40, 4000).astype(float)
+    plain = (coarse > np.quantile(coarse, 0.99, method="higher")).mean()
+    tau, gamma = np_threshold(coarse, 0.01)
+    assert plain < 0.006 and accept_prob(coarse, tau, gamma).mean() == pytest.approx(0.01, abs=1e-12)
+    assert np_threshold(np.array([0.5]), 0.5)[0] in (0.5, float("-inf"))  # tiny samples do not crash
+
+
+def test_tpr_is_compared_at_the_same_false_hit_rate_for_every_system(quick_suite):
+    """Every system's ROC point is read at the target FPR, so a coarse-score code cannot look worse merely for having ties."""
+    rows = [r for r in quick_suite.get("c").tables["systems"] if r["n_cache"] == 1000]
+    assert all(0 <= r["tpr_at_fpr"] <= r["recall_at_1"] + 1e-9 for r in rows)  # a hit needs the right prompt
+    deployed = [r["deployed_fpr"] for r in rows if r["system"] != "exact_hash"]
+    assert max(deployed) < 0.3  # thresholds fit on calibration data transfer to held-out novel prompts (loosely, at quick sizes)
+
+
 def test_workload_c_flyhash_sweep_compares_against_simhash_at_equal_bits(quick_suite):
     rows = quick_suite.get("c").tables["flyhash_sweep"]
     assert {r["kind"] for r in rows} == {"flyhash", "simhash"}
@@ -200,13 +249,25 @@ def test_workload_c_accepts_user_supplied_embeddings(quick, tmp_path):
     cfg = {**quick["c"], "embeddings_npz": str(path), "n_cache": [999]}  # the paraphrase sweep is skipped for user data
     res = c_prompt_cache.run(cfg, seed=0, include_external=False)
     bf = next(r for r in res.tables["systems"] if r["system"] == "bruteforce_cosine")
-    assert bf["n_cache"] == 200 and bf["n_pos"] == 60 and bf["n_neg"] == 40 and bf["recall_at_1"] > 0.9
+    assert bf["n_cache"] == 200 and bf["n_pos"] == 60 and bf["n_neg"] == 80 and bf["recall_at_1"] > 0.9  # 80 = 40 held-out + 40 calibration novel prompts pooled for the ROC
     with pytest.raises(ValueError):
         np.savez(tmp_path / "bad.npz", cache=cache, queries=para, labels=np.array([0]))
         c_prompt_cache.load_embeddings(tmp_path / "bad.npz")
 
 
 # ----------------------------------------------------------------------------- D
+def test_workload_d_capacity_is_found_by_bisection_and_tracks_the_closed_form(quick_suite):
+    summ = quick_suite.get("d").tables["capacity_summary"]
+    assert {"t_max_measured", "t_max_theory", "ratio_to_theory", "bisection_evaluations", "censored"} <= set(summ[0])
+    assert "t_max_interpolated" not in summ[0]  # the coarse-grid interpolation was an artefact and is gone
+    for alg in ("map", "hrr"):
+        a, b = (next(s for s in summ if s["algebra"] == alg and s["dim"] == d) for d in (512, 1024))
+        assert b["t_max_measured"] > a["t_max_measured"]  # capacity grows with dimension
+    assert all(0.4 < s["ratio_to_theory"] < 1.8 for s in summ)  # quick profile: a few dozen hops per evaluation, so loose
+    cap = quick_suite.get("d").tables["capacity"]
+    assert all(x["acc_lo"] is None or x["acc_lo"] <= x["single_hop_acc"] <= x["acc_hi"] for x in cap)
+
+
 def test_workload_d_capacity_physics(quick_suite):
     res = quick_suite.get("d")
     cap = res.tables["capacity"]
@@ -220,6 +281,8 @@ def test_workload_d_capacity_physics(quick_suite):
     holo = max(r["hops_per_ms_single"] for r in sp if r["family"] == "neurostore")
     dct = max(r["hops_per_ms_single"] for r in sp if r["system"] == "adjacency_dict")
     assert dct > 10 * holo  # honest result: pointer chasing is far faster on a CPU
+    holo_rows = [r for r in sp if r["family"] == "neurostore"]
+    assert all(r["triples"] <= max(1, int(0.7 * r["capacity_theory"])) and r["single_hop_acc"] > 0.9 for r in holo_rows)  # timed memories are accurate ones
     assert all(r["reverse_hit_rate"] <= 0.1 for r in res.tables["direction_control"])
 
 
@@ -244,8 +307,19 @@ def test_cim_workload_separates_emulated_accuracy_from_modelled_latency(quick_su
     assert tol[(0.3, "combined_realistic", 1, "see params.combined")]["ident_acc"] >= 0.95
     for r in res.tables["latency_model"]:
         assert r["kind"] == "MODELED (not measured)" and r["modeled_ns"] > 0 and r["cpu_best_us"] > 0
+        assert r["cpu_best_us"] == min(v for v in (r["cpu_float32_us"], r["cpu_packed_us"], r["cpu_faiss_us"]) if v is not None)  # fastest CPU path is the denominator
+        assert r["cpu_best_impl"] in ("numpy_float32_blas", "numpy_packed_popcount", "faiss_binary_flat")
     assert res.headlines == []  # a model must never enter the measured scorecard
     assert any("NOT measurements" in n for n in res.notes)
+
+
+def test_minimal_adc_resolution_needs_every_larger_resolution_to_pass():
+    from neurostore.workloads.cim_emulation import minimal_resolution
+
+    row = lambda bits, acc: {"value": bits, "ident_acc": acc}  # noqa: E731
+    assert minimal_resolution([row(2, 1.0), row(3, 0.94), row(4, 1.0), row(5, 1.0)]) == 4  # 3 bits failed: the lucky 2-bit point earns nothing
+    assert minimal_resolution([row(4, 1.0), row(2, 0.5), row(3, 0.99)]) == 3               # unsorted input is handled
+    assert minimal_resolution([row(2, 0.5), row(8, 0.98)]) is None
 
 
 def test_individual_workload_runs_standalone(quick):

@@ -190,6 +190,8 @@ class RedisKVSystem(_KVBase):
         else:
             self.close()
             raise Unavailable("redis-server did not start")
+        self._r.set(b"__warmup__", b"x")  # first commands allocate client/connection buffers (~50 KB): not data
+        self._r.delete(b"__warmup__")
         self._base_mem = int(self._r.info("memory")["used_memory"])
 
     def _put_many(self, items: list[tuple[bytes, bytes]]) -> None:

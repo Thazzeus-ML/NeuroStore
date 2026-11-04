@@ -16,7 +16,7 @@ from typing import Sequence
 from . import __version__
 from .baselines import availability
 from .profiles import PROFILES, get_profile
-from .report import RENDERERS, render_report, scorecard
+from .report import RENDERERS, render_report, scorecard, tally_text
 from .results import SuiteResult, WorkloadResult
 from .runner import ORDER, parse_workloads, run_suite, selfcheck_failures
 
@@ -127,7 +127,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"\nwrote {out / 'results.json'} and {out / 'REPORT.md'}")
     rows, tally = scorecard(suite)
     if rows:
-        print(f"\nScorecard tally over {sum(tally.values())} comparisons: {tally['WIN']} win / {tally['TIE']} tie / {tally['LOSS']} loss")
+        print(f"\nScorecard tally -- {tally_text(tally)}")
     bad = selfcheck_failures(suite)
     for w, c in bad:
         print(f"SELF-CHECK FAILED [{w}] {c['name']}: {c['measured']}", file=sys.stderr)

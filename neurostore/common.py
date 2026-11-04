@@ -234,6 +234,36 @@ def proportion(successes: int, trials: int) -> dict[str, float]:
     }
 
 
+def cluster_proportion(success: np.ndarray, cluster: np.ndarray) -> dict[str, float]:
+    """Success rate with an interval that respects clustering of the trials.
+
+    In Workload A each stored key is queried many times with fresh noise, but failures are largely *key-driven* (a key
+    that happens to have a close impostor fails again and again), so the replicates are not independent. This treats every
+    cluster (key) as ONE trial: ``Wilson(round(mean_of_cluster_rates * n_clusters), n_clusters)``. It is conservative
+    -- never narrower than the truth -- and reduces to the plain Wilson interval when every trial is its own cluster.
+    """
+    ok = np.asarray(success, dtype=np.float64)
+    uniq, inv = np.unique(np.asarray(cluster), return_inverse=True)
+    per_cluster = np.bincount(inv, weights=ok) / np.bincount(inv)
+    m = int(uniq.size)
+    lo, hi = wilson_interval(int(round(float(per_cluster.mean()) * m)), m)
+    return {"rate": float(ok.mean()), "lo": lo, "hi": hi, "n": int(ok.size), "n_clusters": m}
+
+
+_T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262}
+
+
+def mean_interval(values: Sequence[float]) -> dict[str, float | None]:
+    """Mean with a 95% t-interval across independent replicates (``None`` bounds for fewer than 2)."""
+    v = np.asarray(values, dtype=np.float64)
+    out: dict[str, float | None] = {"mean": float(v.mean()), "sd": None, "lo": None, "hi": None, "n": int(v.size)}
+    if v.size >= 2:
+        sd = float(v.std(ddof=1))
+        half = _T975.get(v.size - 1, 1.96) * sd / math.sqrt(v.size)
+        out.update(sd=sd, lo=float(v.mean() - half), hi=float(v.mean() + half))
+    return out
+
+
 def norm_cdf(x: np.ndarray | float) -> np.ndarray:
     """Standard normal CDF (vectorised ``erfc``; accurate in both tails)."""
     arr = np.asarray(x, dtype=np.float64)

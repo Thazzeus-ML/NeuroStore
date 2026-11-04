@@ -13,14 +13,25 @@ generated report of the reference run.
 > 1. Every system sees **identical** data and queries (paired comparison, explicit seeds).
 > 2. The strongest simple baseline is always present — for retrieval that is **exact brute-force
 >    nearest neighbour**, because a softmax associative memory is that algorithm.
-> 3. Proportions carry **Wilson 95% intervals**; thresholds are read off a monotone envelope.
+> 3. Proportions carry **95% intervals that respect clustering**: in Workload A each stored key is queried
+>    many times and failures are largely key-driven, so the interval counts *keys*, not queries (conservative
+>    Wilson on the number of keys); Workload D uses a t-interval across independent graphs. Thresholds are read
+>    off a monotone envelope.
 > 4. The benchmark **validates itself**: measured quantities with a closed form (identification
 >    probability, linear-memory BER, capacity, graph-hop accuracy) are compared with theory, and
 >    `neurostore run --strict` fails if they disagree.
-> 5. **Measured** and **modelled** numbers are never mixed in one table or scorecard. Section 5
->    latency is a model with stated assumptions.
+> 5. **Measured** and **modelled** numbers are never combined into one score. The Section-5 table shows
+>    a measured CPU time and a modelled hardware time side by side, in separately labelled columns, with the
+>    assumptions printed beneath; it is excluded from the scorecard.
 > 6. Optional baselines (FAISS, Qdrant, RocksDB, Redis, datasketch) are detected at run time and
 >    recorded as *skipped, with the reason* when absent — never silently dropped.
+> 7. **Cost is only compared between systems that do the job.** Latency, throughput, memory and build-time
+>    rows in the scorecard carry an accuracy *gate* (e.g. "noise tolerance ≥ 90 % of the exact-NN ceiling at
+>    this store size"); only systems passing it compete, and NeuroStore is represented by its best system
+>    *among those that pass*. A system therefore cannot win on speed by returning nothing, and no row mixes
+>    two NeuroStore operating points (a fast variant that fails the gate while a slower one supplies the
+>    accuracy). Accuracy comparisons against exact-match stores on noisy keys are *structural* — they cannot
+>    succeed by construction — and are reported, but cost comparisons are what decide the practical case.
 
 ---
 
@@ -60,7 +71,10 @@ have cosine `topic_rho`, so negatives are hard) and *paraphrases* at controlled 
 cache size: recall@1 on paraphrases; **true-hit rate at a fixed false-hit rate** (threshold calibrated
 on separate novel prompts, evaluated on held-out ones); single-query and batched throughput; bytes
 per cached prompt; build time; agreement with exact cosine scan (separates approximation error from
-encoding error). A hardness sweep varies the paraphrase cosine over the **same corpus and topics** (only
+encoding error). The **true-hit rate is read off each system's ROC at exactly the target false-hit rate**
+(randomised handling of tied scores — a plain `score > quantile` rule lands far below the target for coarse
+integer scores like FlyHash overlaps and would penalise them); the deployment protocol (threshold fitted on
+separate calibration prompts) is stored beside it. A hardness sweep varies the paraphrase cosine over the **same corpus and topics** (only
 the queries change). A FlyHash hyper-parameter sweep (expansion `m`, winners `k` including the ≈5 % of the
 original paper, fan-in density) runs next to SimHash with the same number of bits, so FlyHash is judged
 at its best configuration and not at one setting. Real embeddings can be supplied
@@ -277,7 +291,8 @@ To use your own data: `neurostore scaffold`, edit `benchmark_workspace/config.js
 * **One random key set per dimension.** Noise thresholds in Workload A come from a single draw of the
   stored keys; near the 99 % crossing the recall curve is steep (tens of points per noise step), so read a
   threshold to ±1 grid step. The closed-form rows are the key-set average, and the self-check compares the
-  two over the whole grid.
+  two over the whole grid. Systems evaluated on a prefix of the queries (datasketch, Qdrant) have coarser
+  99 % thresholds (at most 1 error in 100); the report lists the count per system.
 * **Single machine, 1 thread.** Throughput is per core. Multi-core scaling, NUMA and cache effects of
   stores larger than RAM are out of scope.
 * **Memory accounting differs by system** (deep object size, serialised size, SST bytes, server

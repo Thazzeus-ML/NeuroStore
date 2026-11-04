@@ -272,6 +272,10 @@ def test_composite_indexes_blow_up_combinatorially_while_the_inverted_index_does
     assert comp[4].memory_bytes() > 2 * comp[2].memory_bytes()
     inv = InvertedIndexIntersect(table, vocab)
     assert inv.memory_bytes() < comp[2].memory_bytes() / 5
+    # same accounting for both: indexes + the base table that reconstruct() reads
+    assert inv.memory_bytes() == inv.index_bytes() + table.nbytes and comp[2].memory_bytes() == comp[2].index_bytes() + table.nbytes
+    # the blow-up is not an artefact of Python dict overhead: even as compact sorted arrays it scales with C(F,K) indexes
+    assert comp[4].compact_bytes() == comp[4].n_indexes * 300 * (4 * 2 + 4) and comp[4].compact_bytes() > 8 * inv.index_bytes()
     assert 2**8 - 1 == 255  # indexes needed to serve ANY field subset
 
 

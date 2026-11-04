@@ -164,10 +164,12 @@ def _render_b(w: WorkloadResult) -> str:
     out.append(f"\n**Latency / memory** (K={cfg['latency_k']}, D={cfg['latency_dim']}, M={cfg['n_records']}, 1 thread). Information content = {w.summary['entropy_bits_per_record']:.1f} bits/record.\n")
     out.append(md_table(["system", "p50 us", "p99 us", "queries/s", "bytes/record", "eta"],
                         [[r["system"], num(r["p50_us"], 1), num(r["p99_us"], 1), num(r["qps"], 0), num(r["bytes_per_record"], 0), sig(r["eta"])] for r in lat]))
-    out.append("\n**Index blow-up** -- composite (multi-column) indexes needed to serve any K-of-F cue in O(1):\n")
-    out.append(md_table(["K", "indexes for this K", "indexes for any subset", "composite bytes", "inverted-index bytes", "table bytes", "composite measured?"],
-                        [[b["K"], b["n_indexes_for_K"], b["n_indexes_any_subset"], fmt_bytes(b["composite_bytes_extrapolated"] or 0), fmt_bytes(b["inverted_bytes"]),
-                          fmt_bytes(b["table_bytes"]), "yes" if b["composite_measured"] else "extrapolated"] for b in w.tables["index_blowup"]]))
+    out.append("\n**Index blow-up** -- composite (multi-column) indexes needed to serve any K-of-F cue in O(1) vs one inverted index per column. "
+               "'Python dicts' is what is implemented here; 'compact arrays' is the same index as sorted (key, row id) arrays, which is the fair size to set against the "
+               "numpy posting lists -- the C(F,K)-vs-F scaling holds in both.\n")
+    out.append(md_table(["K", "indexes for this K", "indexes for any subset", "composite, Python dicts", "composite, compact arrays", "inverted index", "base table"],
+                        [[b["K"], b["n_indexes_for_K"], b["n_indexes_any_subset"], fmt_bytes(b["composite_bytes_extrapolated"] or 0) + ("" if b["composite_measured"] else " (extrap.)"),
+                          fmt_bytes(b["composite_compact_bytes"]), fmt_bytes(b["inverted_bytes"]), fmt_bytes(b["table_bytes"])] for b in w.tables["index_blowup"]]))
     return "\n".join(out)
 
 
@@ -176,10 +178,10 @@ def _render_c(w: WorkloadResult) -> str:
     cfg, rows = w.params, w.tables["systems"]
     for n in sorted({r["n_cache"] for r in rows}):
         sel = [r for r in rows if r["n_cache"] == n]
-        out.append(f"**N = {n:,} cached prompts** (d={sel[0]['dim']}, paraphrase cosine {cfg['para_cos']}, topic rho {cfg['topic_rho']}; hit threshold calibrated at {cfg['target_fpr'] * 100:g}% false hits; 1 thread).\n")
-        out.append(md_table(["system", "recall@1", "TPR@FPR", "real FPR", "ANN agree", "p50 us", "q/s (1)", "q/s (batch)", "B/prompt", "build s"],
-                            [[r["system"], pct(r["recall_at_1"], 1), pct(r["tpr_at_fpr"], 1), pct(r["realised_fpr"], 1), pct(r.get("ann_agreement"), 1), num(r["p50_us"], 1),
-                              num(r["qps_single"], 0), num(r["qps_batch"], 0), num(r["bytes_per_prompt"], 0), num(r["build_s"], 2)] for r in sel]))
+        out.append(f"**N = {n:,} cached prompts** (d={sel[0]['dim']}, paraphrase cosine {cfg['para_cos']}, topic rho {cfg['topic_rho']}; true-hit rate read at exactly {cfg['target_fpr'] * 100:g}% false hits; 1 thread).\n")
+        out.append(md_table(["system", "recall@1", f"TPR@{cfg['target_fpr'] * 100:g}%FPR", "deployed FPR", "ANN agree", "p50 us", "q/s (1)", "q/s (batch)", "B/prompt index", "B/prompt total", "build s"],
+                            [[r["system"], pct(r["recall_at_1"], 1), pct(r["tpr_at_fpr"], 1), pct(r["deployed_fpr"], 1), pct(r.get("ann_agreement"), 1), num(r["p50_us"], 1),
+                              num(r["qps_single"], 0), num(r["qps_batch"], 0), num(r["bytes_per_prompt"], 0), num(r["bytes_per_prompt_total"], 0), num(r["build_s"], 2)] for r in sel]))
         out.append("")
     sw = w.tables.get("hardness_sweep", [])
     if sw:
@@ -203,17 +205,20 @@ def _render_d(w: WorkloadResult) -> str:
         out.append(f"_{alg.upper()}_\n")
         out.append(_pivot(sel, "dim", "triples", lambda r: f"{pct(r['single_hop_acc'], 1)} ({pct(r['theory_acc'], 0)})", corner="D \\ triples T"))
         out.append("")
-    out.append(f"**Capacity** -- largest T on the grid with single-hop accuracy >= {cfg['accuracy_target'] * 100:g}%, vs closed-form bound `D/(2 ln E)`-type law (E={e}):\n")
-    out.append(md_table(["algebra", "D", "T_max (grid)", "first failing T", "T_max (interpolated)", "T_max (theory)"],
-                        [[s["algebra"], s["dim"], num(s["t_max_grid"], 0), num(s["first_fail_grid"], 0), num(s["t_max_interpolated"], 0), num(s["t_max_theory"], 0)] for s in w.tables["capacity_summary"]]))
+    out.append(f"**Capacity** -- largest T with single-hop accuracy >= {cfg['accuracy_target'] * 100:g}% (E={e}), found by bisection on fresh random graphs "
+               f"({cfg['capacity_graphs']} per evaluation, 3% resolution), against the closed-form bound ~ D / (2 ln E + margin). The coarse grid above only resolves a factor of two.\n")
+    out.append(md_table(["algebra", "D", "T_max measured", "T_max theory", "measured / theory", "grid: last pass / first fail"],
+                        [[s["algebra"], s["dim"], (">= " if s["censored"] else "") + num(s["t_max_measured"], 0), num(s["t_max_theory"], 0),
+                          num(s["ratio_to_theory"], 2) if s["ratio_to_theory"] is not None else "-", f"{num(s['t_max_grid'], 0)} / {num(s['first_fail_grid'], 0)}"] for s in w.tables["capacity_summary"]]))
     hops = cfg["hops"]
     d_show = cfg["dims"][len(cfg["dims"]) // 2]
     out.append(f"\n**Multi-hop path accuracy** (D={d_show}; success = every hop of the walk correct; errors compound):\n")
     sel = [r for r in cap if r["dim"] == d_show]
     out.append(md_table(["algebra", "T"] + [f"{h}-hop" for h in hops], [[r["algebra"], r["triples"]] + [pct(r[f"path_acc_h{h}"], 1) for h in hops] for r in sorted(sel, key=lambda x: (x["algebra"], x["triples"]))]))
     out.append("\n**Traversal speed and memory** (a graph far inside capacity -- this measures cost, not accuracy):\n")
-    out.append(md_table(["system", "D", "E", "triples", "hops/ms (1 query)", "hops/ms (batch)", "bytes/triple", "trace bytes"],
-                        [[r["system"], r["dim"] or "-", r["n_entities"], r["triples"], sig(r["hops_per_ms_single"]), sig(r["hops_per_ms_batch"]), num(r["bytes_per_triple"], 0), num(r["trace_bytes"], 0)]
+    out.append(md_table(["system", "D", "E", "triples", "hops/ms (1 query)", "hops/ms (batch)", "bytes/triple (as built)", "bytes/triple at 99% capacity", "trace bytes", "allocated"],
+                        [[r["system"], r["dim"] or "-", r["n_entities"], r["triples"], sig(r["hops_per_ms_single"]), sig(r["hops_per_ms_batch"]), num(r["bytes_per_triple"], 0),
+                          num(r.get("bytes_per_triple_at_capacity"), 0) if r.get("bytes_per_triple_at_capacity") else "-", num(r["trace_bytes"], 0), fmt_bytes(r["memory_bytes"])]
                          for r in w.tables["speed"]]))
     out.append("\n**Direction control** -- querying an edge backwards must not return the subject:\n")
     out.append(md_table(["algebra", "D", "T", "forward accuracy", "reverse hit rate", "chance"],
@@ -262,9 +267,9 @@ def _render_cim(w: WorkloadResult) -> str:
     out.append(md_table(["D", "query noise", "parameter", "limit", "unit"],
                         [[x["dim"], pct(x["query_noise"], 0), x["param"], sig(x["max_value_at_99"]) if x["max_value_at_99"] is not None else "-", x["unit"]] for x in w.tables["tolerance_limits"]]))
     out.append("\n**Search latency -- MODELED projection vs MEASURED CPU** (not a measured hardware result; see assumptions below). "
-               "CPU = best single-thread time of float32 BLAS mat-vec or packed popcount on this machine.\n")
-    out.append(md_table(["N keys", "D", "CPU best us (measured)", "preset", "tiles", "waves", "modeled ns", "speed-up if model holds", "regime"],
-                        [[r["n_keys"], r["dim"], num(r["cpu_best_us"], 1), r["preset"], r["tiles"], r["waves"], num(r["modeled_ns"], 1), f"{r['modeled_speedup_vs_cpu_best']:.0f}x", r["regime"]] for r in w.tables["latency_model"]]))
+               "CPU = the fastest single-thread implementation available here (FAISS binary flat if installed, else NumPy).\n")
+    out.append(md_table(["N keys", "D", "CPU best us (measured)", "CPU implementation", "preset", "tiles", "waves", "modeled ns", "speed-up if model holds", "regime"],
+                        [[r["n_keys"], r["dim"], num(r["cpu_best_us"], 1), r.get("cpu_best_impl", "-"), r["preset"], r["tiles"], r["waves"], num(r["modeled_ns"], 1), f"{r['modeled_speedup_vs_cpu_best']:.0f}x", r["regime"]] for r in w.tables["latency_model"]]))
     out.append("\nTiming-model parameters (illustrative placeholders, ns):\n")
     from .primitives.cim import CIMTimingModel
 
@@ -293,32 +298,61 @@ def _verdict(ns: float, base: float, higher_is_better: bool, tol: float = 0.05) 
     return "WIN" if diff > tol else ("LOSS" if diff < -tol else "TIE")
 
 
-def scorecard(suite: SuiteResult) -> tuple[list[list[str]], dict[str, int]]:
+def empty_tally() -> dict[str, dict[str, int]]:
+    return {"quality": {"WIN": 0, "TIE": 0, "LOSS": 0}, "cost": {"WIN": 0, "TIE": 0, "LOSS": 0}}
+
+
+def scorecard(suite: SuiteResult) -> tuple[list[list[str]], dict[str, dict[str, int]]]:
+    """Rows for the scorecard table and a tally ``{'quality': {WIN, TIE, LOSS}, 'cost': {...}}``.
+
+    * ``quality`` headlines (accuracy / robustness) compare every system.
+    * ``cost`` headlines (latency, throughput, memory, build time) carry an accuracy *gate*: only systems that pass it
+      compete. A system cannot win on speed by returning nothing, and NeuroStore is represented by its best system **among
+      those that pass the gate** -- not by whichever variant is fastest while another one supplies the accuracy.
+    """
     rows: list[list[str]] = []
-    tally = {"WIN": 0, "TIE": 0, "LOSS": 0}
+    tally = empty_tally()
     for w in suite.workloads:
         for h in w.headlines:
             systems = h["systems"]
-            ns = {n: s["value"] for n, s in systems.items() if s["family"] == "neurostore" and s["value"] is not None}
-            if not ns:
+            kind = h.get("kind", "quality")
+            eligible = {n: s for n, s in systems.items() if s.get("passes") is not False}
+            excluded = [n for n, s in systems.items() if s.get("passes") is False and s["family"] != "theory"]
+            ns = {n: s["value"] for n, s in eligible.items() if s["family"] == "neurostore" and s["value"] is not None}
+            any_ns = any(s["family"] == "neurostore" for s in systems.values())
+            if not any_ns:
                 continue
             hib = h["higher_is_better"]
             pick = (max if hib else min)
+            note = f"<br>_gate: {h['gate']}_" if h.get("gate") else ""
+            metric = f"{'[cost] ' if kind == 'cost' else ''}{h['metric']} [{h['unit']}{'' if hib else ', lower=better'}]"
+            if not ns:
+                rows.append([w.workload.upper(), metric, h["context"], "**fails the gate**", "not compared" + note])
+                continue
             best_ns = pick(ns, key=ns.get)
             cells = []
-            for fam in dict.fromkeys(s["family"] for s in systems.values()):
+            for fam in dict.fromkeys(s["family"] for s in eligible.values()):
                 if fam in ("neurostore", "theory"):
                     continue
-                fs = {n: s["value"] for n, s in systems.items() if s["family"] == fam and s["value"] is not None}
+                fs = {n: s["value"] for n, s in eligible.items() if s["family"] == fam and s["value"] is not None}
                 if not fs:
                     continue
                 best = pick(fs, key=fs.get)
                 v = _verdict(ns[best_ns], fs[best], hib)
-                if v in tally:
-                    tally[v] += 1
+                if v in tally[kind]:
+                    tally[kind][v] += 1
                 cells.append(f"{fam}: {sig(fs[best])} ({best}) **{v}**")
-            rows.append([w.workload.upper(), f"{h['metric']} [{h['unit']}{'' if hib else ', lower=better'}]", h["context"], f"{sig(ns[best_ns])} ({best_ns})", "<br>".join(cells) or "no baseline"])
+            if excluded:
+                cells.append("_excluded by the gate: " + ", ".join(excluded) + "_")
+            rows.append([w.workload.upper(), metric, h["context"], f"{sig(ns[best_ns])} ({best_ns})",
+                         "<br>".join(cells) + (note if cells else "") or "no baseline"])
     return rows, tally
+
+
+def tally_text(tally: dict[str, dict[str, int]]) -> str:
+    q, c = tally["quality"], tally["cost"]
+    return (f"quality (accuracy / robustness): {q['WIN']} win, {q['TIE']} tie, {q['LOSS']} loss over {sum(q.values())} comparisons; "
+            f"cost (latency / throughput / memory, accuracy-gated): {c['WIN']} win, {c['TIE']} tie, {c['LOSS']} loss over {sum(c.values())} comparisons")
 
 
 # ----------------------------------------------------------------------------- full report
@@ -343,10 +377,12 @@ def render_report(suite: SuiteResult) -> str:
     if rows:
         out.append("## Scorecard (computed from the data)\n")
         out.append("Best NeuroStore system vs the best system of each competing family on the same headline metric. WIN/LOSS means more than 5% better/worse; otherwise TIE. "
+                   "**Quality** rows (accuracy, robustness) compare every system; **[cost]** rows (latency, throughput, memory, build time) compare only systems that pass the row's accuracy "
+                   "gate, and NeuroStore is represented by its best system *among those that pass* -- so nothing wins on speed by returning nothing, and no row mixes two NeuroStore "
+                   "operating points. Comparisons against exact-match stores on noisy-key accuracy are structural (they cannot succeed by construction). "
                    "Section-5 CIM latency is excluded: it is a model, not a measurement.\n")
-        out.append(md_table(["wl", "metric", "context", "best NeuroStore", "best of each competing family"], rows))
-        total = sum(tally.values())
-        out.append(f"\n**Tally over {total} comparisons: {tally['WIN']} win, {tally['TIE']} tie, {tally['LOSS']} loss.**\n")
+        out.append(md_table(["wl", "metric", "context", "best NeuroStore", "best of each competing family (that passes the gate)"], rows))
+        out.append(f"\n**Tally -- {tally_text(tally)}.**\n")
     checks = [(w.workload.upper(), c) for w in suite.workloads for c in w.checks]
     if checks:
         out.append("## Checks against the evaluation spec and benchmark self-validation\n")

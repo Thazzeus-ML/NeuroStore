@@ -13,7 +13,7 @@ Two questions, answered with different kinds of evidence:
 2. **How fast could it be?** (*modelled, NOT measured*)
    :class:`~neurostore.primitives.cim.CIMTimingModel` projects search latency from explicit
    device-timing assumptions and is compared with the **measured** time of the best CPU
-   implementation here (float32 BLAS mat-vec or packed XOR+popcount, single thread). The
+   implementation here (FAISS binary flat when installed, else NumPy float32 BLAS or packed XOR+popcount; single thread). The
    ratio mixes a measurement with a projection, so it is a *what-if under stated assumptions*,
    reported for two assumption sets (a range, not a point), and excluded from the scorecard.
 
@@ -67,6 +67,12 @@ def _sweeps(cfg: dict[str, Any]) -> list[tuple[str, Any, str, CrossbarConfig]]:
     return out
 
 
+def minimal_resolution(series: list[dict[str, Any]], target: float = 0.99) -> float | None:
+    """Smallest swept value from which EVERY larger swept value also reaches ``target`` (no credit for a lucky low point)."""
+    series = sorted(series, key=lambda r: r["value"])
+    return next((series[i]["value"] for i in range(len(series)) if all(x["ident_acc"] >= target for x in series[i:])), None)
+
+
 def _tolerance(cfg: dict[str, Any], seed: int, res: WorkloadResult, log: Log) -> None:
     rows: list[dict[str, Any]] = []
     sweeps = _sweeps(cfg)
@@ -99,8 +105,8 @@ def _tolerance(cfg: dict[str, Any], seed: int, res: WorkloadResult, log: Log) ->
                 limits.append({**base, "param": param, "max_value_at_99": tc["last_ok"], "first_fail": tc["first_fail"], "unit": "fraction of tile full scale" if param == "read_noise" else "fraction"})
             for fs in cfg["adc_fs_fractions"]:
                 sel = sorted((r for r in rows if r["dim"] == dim and r["query_noise"] == qn and r["param"] == "adc_bits" and r["variant"] == f"fs={fs:g}"), key=lambda r: r["value"])
-                ok = [r["value"] for r in sel if r["ident_acc"] >= 0.99]
-                limits.append({**base, "param": f"adc_bits (fs={fs:g})", "max_value_at_99": min(ok) if ok and ideal >= 0.99 else None, "first_fail": None, "unit": "minimum bits for >=99%"})
+                minimal = minimal_resolution(sel)
+                limits.append({**base, "param": f"adc_bits (fs={fs:g})", "max_value_at_99": minimal if ideal >= 0.99 else None, "first_fail": None, "unit": "minimum bits for >=99% (and all larger)"})
     res.tables["tolerance_limits"] = limits
 
 
@@ -117,15 +123,28 @@ def _ideal_check(cfg: dict[str, Any], seed: int, res: WorkloadResult) -> None:
                   note="Validates the differential-pair mapping and the tiled partial-sum accumulation.")
 
 
-def _cpu_us(n: int, dim: int, reps: int, rng: np.random.Generator) -> dict[str, float]:
+def _cpu_us(n: int, dim: int, reps: int, rng: np.random.Generator) -> dict[str, Any]:
+    """Single-thread CPU time (p50, us) of one nearest-key search, for every implementation available; the fastest is the
+    fair denominator for any speed-up: NumPy float32 BLAS, NumPy packed XOR+popcount, and FAISS ``IndexBinaryFlat`` (SIMD)."""
     keys = random_bipolar(rng, n, dim)
     kf = keys.astype(np.float32)
     q = kf[0].copy()
-    float_us = summarize_latency(time_calls(lambda _x: int((kf @ q).argmax()), [None] * reps, warmup=2))["p50_us"]
+    times = {"numpy_float32_blas": summarize_latency(time_calls(lambda _x: int((kf @ q).argmax()), [None] * reps, warmup=2))["p50_us"]}
     del kf
     kp, qp = pack_bipolar(keys), pack_bipolar(keys[0])
-    packed_us = summarize_latency(time_calls(lambda _x: int(popcount_rows(kp ^ qp).argmin()), [None] * reps, warmup=2))["p50_us"]
-    return {"cpu_float32_us": float_us, "cpu_packed_us": packed_us, "cpu_best_us": min(float_us, packed_us)}
+    times["numpy_packed_popcount"] = summarize_latency(time_calls(lambda _x: int(popcount_rows(kp ^ qp).argmin()), [None] * reps, warmup=2))["p50_us"]
+    try:
+        import faiss  # type: ignore
+
+        idx = faiss.IndexBinaryFlat(kp.shape[1] * 64)
+        idx.add(kp.view(np.uint8))
+        qb = np.ascontiguousarray(qp.view(np.uint8)[None, :])
+        times["faiss_binary_flat"] = summarize_latency(time_calls(lambda _x: idx.search(qb, 1), [None] * reps, warmup=2))["p50_us"]
+    except ImportError:
+        pass
+    best = min(times, key=times.get)
+    return {"cpu_float32_us": times["numpy_float32_blas"], "cpu_packed_us": times["numpy_packed_popcount"], "cpu_faiss_us": times.get("faiss_binary_flat"),
+            "cpu_best_us": times[best], "cpu_best_impl": best}
 
 
 def _latency(cfg: dict[str, Any], seed: int, res: WorkloadResult, log: Log) -> None:
@@ -154,7 +173,7 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
     res.notes += [
         "ACCURACY rows are numerical emulation of a tiled differential-pair crossbar (per-tile read noise and ADC, static programming/stuck/drift errors); they are not silicon measurements.",
         "LATENCY rows are an analytical projection from the stated timing parameters (CIMTimingModel presets are illustrative placeholders); they are NOT measurements and are excluded from the scorecard.",
-        "The CPU column is a real single-thread measurement of the best of float32 BLAS and packed popcount; the speedup column divides a measurement by a projection.",
+        "The CPU column is a real single-thread measurement of the fastest available implementation (FAISS binary flat when installed, else NumPy float32 BLAS or packed popcount); the speed-up column divides a measurement by a projection.",
         "The model covers the search stage only: no programming/write time or energy, no host I/O, and (as in real arrays) a size-independent analogue time only while all tiles fit the array budget.",
         "Read-noise sigma is relative to a tile's full-scale output (tile_rows x input_fs); with 256-row tiles a 2% setting means sigma = 5.1 in dot-product units against an impostor spread of sqrt(D).",
     ]

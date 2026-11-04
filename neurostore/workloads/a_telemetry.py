@@ -43,7 +43,7 @@ from ..common import (
     limit_threads,
     make_rng,
     noise_to_flips,
-    proportion,
+    cluster_proportion,
     random_bipolar,
     summarize_latency,
     threshold_crossing,
@@ -104,6 +104,7 @@ def _scale_specs(cfg: dict[str, Any], include_external: bool) -> list[SystemSpec
         spec_from_class(DictKVSystem),
     ]
     if include_external:
+        specs.append(spec_from_class(FaissBinaryFlatSystem))
         specs.append(spec_from_class(FaissBinaryHNSWSystem))
         specs += _hnsw_ef_specs(cfg)
     return specs
@@ -165,9 +166,11 @@ def _recall_vs_noise(cfg: dict[str, Any], seed: int, specs: list[SystemSpec], re
                 for spec, m in systems:
                     n = min(trials, m.max_queries or trials)
                     out = m.retrieve_values(queries[:n])
-                    ok = int((out == truth[:n]).all(axis=1).sum())
+                    ok_vec = (out == truth[:n]).all(axis=1)
+                    ok = int(ok_vec.sum())
+                    # every stored key is queried repeatedly and failures are largely key-driven: the interval counts keys, not queries
                     row = {"dim": dim, "n_items": n_items, "system": spec.name, "family": spec.family or m.family,
-                           "noise": p, **{k: v for k, v in proportion(ok, n).items() if k != "k"}, "correct": ok}
+                           "noise": p, **cluster_proportion(ok_vec, true_idx[:n]), "correct": ok}
                     if getattr(m, "supports_ids", True):
                         ids = m.retrieve_ids(queries[:n])
                         if ids is not None:
@@ -350,15 +353,27 @@ def _checks_and_headlines(cfg: dict[str, Any], res: WorkloadResult) -> None:
     heads = []
     ctx = f"D={dim0}, N={cfg['n_items']}"
     sysd = {r["system"]: (100.0 * (r["last_ok"] or 0.0), r["family"]) for r in thr if r["dim"] == dim0 and r["family"] != "theory"}
-    heads.append(headline("Noise tolerance: largest bit-flip rate with >=99% exact recall", "% of bits flipped", True, ctx, sysd))
+    heads.append(headline("Noise tolerance: largest bit-flip rate with >=99% exact recall", "% of bits flipped", True, ctx, sysd, kind="quality"))
     lat = res.tables.get("latency_memory", [])
     if lat:
         n_big = max(r["n_items"] for r in lat)
         sel = [r for r in lat if r["n_items"] == n_big]
         c2 = f"D={cfg['latency_dim']}, N={n_big}, 1 thread"
-        heads.append(headline("Read latency p50 (single query, 10% noise)", "us", False, c2, {r["system"]: (r["read_p50_us"], r["family"]) for r in sel}))
-        heads.append(headline("Write latency p50 (single insert)", "us", False, c2, {r["system"]: (r["write_p50_us"], r["family"]) for r in sel}))
-        heads.append(headline("Memory per stored (key, value) pair", "bytes", False, c2, {r["system"]: (r["bytes_per_pair"], r["family"]) for r in sel}))
+        # Cost is only compared between systems that do the job: noise tolerance at THIS store size must reach 90% of the
+        # exact-NN ceiling. The store-size sweep supplies it where available; the others fall back to their N=100 result.
+        scale = {(r["n_items"], r["system"]): r["last_ok"] for r in res.tables.get("scale_thresholds", [])}
+        main = {r["system"]: r["last_ok"] for r in thr if r["dim"] == dim0}
+
+        def tolerance(name: str) -> float:
+            v = scale.get((n_big, name), main.get(name))
+            return float(v or 0.0)
+
+        ceiling = tolerance("bruteforce_hamming")
+        gate = f"exact-recall noise tolerance >= 90% of the exact-NN ceiling ({ceiling * 100:.0f}%) at N={n_big} (systems absent from the store-size sweep: their N=100 result)"
+        ok = {r["system"]: tolerance(r["system"]) >= 0.9 * ceiling for r in sel}
+        for metric, unit, col in (("Read latency p50 (single query, 10% noise)", "us", "read_p50_us"), ("Write latency p50 (single insert)", "us", "write_p50_us"),
+                                  ("Memory per stored (key, value) pair", "bytes", "bytes_per_pair")):
+            heads.append(headline(metric, unit, False, c2, {r["system"]: (r[col], r["family"], ok[r["system"]]) for r in sel}, kind="cost", gate=gate))
     res.headlines = heads
     res.summary = {
         "primary_dim": dim0,

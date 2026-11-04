@@ -69,7 +69,9 @@ benchmark_strategies.md   the evaluation plan, protocols, defect audit of the re
 
 * The **scorecard** in each report compares the best NeuroStore system with the best system of each
   competing family on the same metric and labels it WIN / TIE / LOSS (> 5 % difference). It is computed
-  from the stored data, not written by hand.
+  from the stored data, not written by hand. *Quality* rows (accuracy) compare every system; *cost* rows
+  (latency, memory, ...) compare only systems that pass an accuracy gate, so nothing wins on speed by
+  returning nothing and NeuroStore is represented by a system that actually does the job.
 * A softmax associative memory with large β **is** exact nearest-neighbour search, so on retrieval
   tasks the neural primitive cannot beat the exact-NN ceiling; the interesting questions are cost
   (latency, memory) and behaviour where exact methods break (corrupted cues, exact-match stores).

@@ -238,8 +238,26 @@ def test_incremental_and_bulk_insertion_build_the_same_memory(rng):
         assert np.allclose(a.memory, b.memory, atol=1e-4) and a.n_triples == b.n_triples == 80
 
 
-def test_graph_memory_accounting_and_validation():
-    g = HolographicGraphMemory(50, 4, 256, "map", seed=0)
-    assert g.trace_bytes() == 256 * 4 and g.memory_bytes() == 256 * 4 + 54 * 256 * 4
+def test_graph_memory_accounting_counts_every_allocated_array():
+    """memory_bytes() once omitted the permuted codebook copy and, for HRR, all frequency-domain spectra (2-4x under-reported)."""
+    sizes = {}
+    for alg in ("map", "hrr"):
+        g = HolographicGraphMemory(50, 4, 256, alg, seed=0)
+        held = sum(v.nbytes for v in vars(g).values() if isinstance(v, np.ndarray))
+        assert g.memory_bytes() == held  # nothing the object allocates may be left out of the report
+        assert g.trace_bytes() == 256 * 4 and 0 < g.query_path_bytes() < g.memory_bytes()
+        sizes[alg] = g.memory_bytes()
+    assert sizes["hrr"] > 1.5 * sizes["map"]  # the complex spectra are real memory
+    assert sizes["map"] > 2 * (50 + 4) * 256 * 4 * 0.9  # codebooks (entities, relations) plus their permuted copies
+
+
+def test_inverse_permutation_is_cached_not_recomputed_per_hop():
+    a = MAPAlgebra(512, seed=1)
+    assert a._inv_perm_power(2) is a._inv_perm_power(2)
+    x = a.random_vectors(1)
+    assert np.allclose(a.inverse_permute(a.permute(x, 2), 2), x)
+
+
+def test_graph_rejects_unknown_algebra():
     with pytest.raises(ValueError):
         HolographicGraphMemory(10, 2, 64, "quaternion")

@@ -15,9 +15,10 @@ Protocol (per cache size N)
 ---------------------------
 * ``n_pos`` paraphrase queries (ground truth = the source prompt) and ``n_neg`` novel prompts.
 * **Recall@1**: fraction of paraphrases whose top-1 candidate is the source prompt.
-* **TPR @ FPR**: a hit is declared when the top-1 score exceeds a threshold calibrated on a
-  separate set of novel prompts so that at most ``target_fpr`` of novel prompts hit; reported on
-  held-out queries together with the realised false-hit rate.
+* **TPR @ FPR**: true hits (right prompt *and* declared a hit) at exactly ``target_fpr`` false hits on the novel
+  prompts, via the ROC with randomised tie handling (:func:`np_threshold`), so systems with very different score
+  scales -- and coarse integer scores -- are compared at the *same* operating point. The deployment protocol
+  (threshold fit on separate calibration prompts, applied to held-out ones) is stored alongside as ``deployed_*``.
 * **Throughput**: single-query latency/QPS (encode + search, 1 thread) and batched QPS.
 * **Memory**: bytes of the per-prompt index, N-independent state reported separately.
 * **ANN agreement**: how often the system returns the same top-1 as exact cosine scan,
@@ -126,23 +127,57 @@ def _specs(cfg: dict[str, Any], include_external: bool) -> list[SystemSpec]:
     return specs
 
 
+def np_threshold(neg_scores: np.ndarray, fpr: float) -> tuple[float, float]:
+    """Randomised Neyman-Pearson threshold ``(tau, gamma)`` for a target false-hit rate.
+
+    Scores above ``tau`` are accepted, scores equal to ``tau`` with probability ``gamma``, so the *expected* false-hit rate
+    on ``neg_scores`` is exactly ``fpr`` -- also for coarse, tie-heavy scores such as FlyHash overlaps (integers 0..k),
+    where a plain ``score > quantile`` rule lands far below the target and would unfairly penalise those systems.
+    """
+    neg = np.sort(np.asarray(neg_scores, dtype=np.float64))[::-1]
+    n = neg.size
+    k = fpr * n
+    i = int(np.floor(k))
+    if i >= n:
+        return float("-inf"), 1.0
+    tau = neg[i]
+    gt, eq = int((neg > tau).sum()), int((neg == tau).sum())
+    return float(tau), float((k - gt) / eq)
+
+
+def accept_prob(scores: np.ndarray, tau: float, gamma: float) -> np.ndarray:
+    """Probability that each score is declared a hit under the randomised rule ``(tau, gamma)``."""
+    s = np.asarray(scores, dtype=np.float64)
+    return (s > tau).astype(np.float64) + gamma * (s == tau)
+
+
 def _calibrated_metrics(sys_: CacheSystem, data: dict[str, np.ndarray], target_fpr: float, brute_ids: np.ndarray | None) -> dict[str, Any]:
+    """Quality metrics of one system on one query set.
+
+    * ``tpr_at_fpr`` -- **headline**: true hits (right prompt *and* declared a hit) at exactly ``target_fpr`` on all novel
+      prompts (ROC point with tie randomisation), so every system is compared at the same operating point.
+    * ``deployed_tpr`` / ``deployed_fpr`` -- the deployment protocol: the threshold is fit on the calibration prompts only
+      and applied to held-out novel prompts; ``deployed_fpr`` shows how well a threshold transfers (it scatters around the
+      target by sampling error).
+    """
     ids_p, sc_p = sys_.search(data["pos_q"])
     _, sc_n = sys_.search(data["neg_q"])
     _, sc_c = sys_.search(data["calib_q"])
     n_pos = len(ids_p)
     correct = ids_p == data["pos_src"]
-    thr = float(np.quantile(sc_c, 1.0 - target_fpr, method="higher"))
-    hit_ok = (sc_p > thr) & correct
+    tau, gamma = np_threshold(np.concatenate([sc_n, sc_c]), target_fpr)
+    tau_d, gamma_d = np_threshold(sc_c, target_fpr)
+    prop = proportion(int(correct.sum()), n_pos)
     out = {
-        "recall_at_1": proportion(int(correct.sum()), n_pos)["rate"],
-        "recall_lo": proportion(int(correct.sum()), n_pos)["lo"],
-        "recall_hi": proportion(int(correct.sum()), n_pos)["hi"],
-        "tpr_at_fpr": float(hit_ok.mean()),
-        "realised_fpr": float((sc_n > thr).mean()),
-        "threshold": thr,
+        "recall_at_1": prop["rate"],
+        "recall_lo": prop["lo"],
+        "recall_hi": prop["hi"],
+        "tpr_at_fpr": float((accept_prob(sc_p, tau, gamma) * correct).mean()),
+        "deployed_tpr": float((accept_prob(sc_p, tau_d, gamma_d) * correct).mean()),
+        "deployed_fpr": float(accept_prob(sc_n, tau_d, gamma_d).mean()),
+        "threshold": tau,
         "n_pos": n_pos,
-        "n_neg": len(sc_n),
+        "n_neg": len(sc_n) + len(sc_c),
     }
     if brute_ids is not None:
         out["ann_agreement"] = float((ids_p == brute_ids).mean())
@@ -225,6 +260,7 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
                     rows.append({
                         "n_cache": n, "system": spec.name, "family": spec.family or m.family, "dim": int(data["cache"].shape[1]),
                         **met, "build_s": build_s, "index_bytes": mem, "bytes_per_prompt": mem / n, "fixed_bytes": m.fixed_bytes(),
+                        "bytes_per_prompt_total": (mem + m.fixed_bytes()) / n,
                         "p50_us": lat["p50_us"], "p99_us": lat["p99_us"], "qps_single": 1e6 / lat["mean_us"],
                         "qps_batch": cfg["batch"] / float(np.median(reps)),
                     })
@@ -238,7 +274,7 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
                             met = _calibrated_metrics(m, sd, cfg["target_fpr"], b_ids)
                             sweep_rows.append({"n_cache": n, "para_cos": pc, "system": spec.name, "family": spec.family or m.family,
                                                "recall_at_1": met["recall_at_1"], "tpr_at_fpr": met["tpr_at_fpr"],
-                                               "realised_fpr": met["realised_fpr"]})
+                                               "deployed_fpr": met["deployed_fpr"]})
                     fly_rows.extend(_flyhash_sweep(cfg, data["cache"], [x for x in sweep_sets if x[0] in cfg["flyhash_sweep_para"]], log))
             finally:
                 for _, m, _ in built:
@@ -251,8 +287,8 @@ def run(cfg: dict[str, Any], seed: int = 0, profile: str = "custom", include_ext
     res.notes += [
         "Embeddings are synthetic (topic structure + controlled-cosine paraphrases); absolute recalls depend on topic_rho/para_cos and must be re-measured on real embeddings (embeddings_npz).",
         "Latency is end-to-end for one query in one thread: it includes FlyHash/SimHash encoding. NumPy call overhead alone is several microseconds.",
-        "Hit decisions use a per-system score threshold calibrated on separate novel prompts at the target false-hit rate.",
-        "bytes_per_prompt excludes N-independent state (fixed_bytes: the random projection); FAISS sizes are the serialised index size.",
+        "TPR@FPR is read off each system's ROC at exactly the target false-hit rate (randomised ties); 'deployed FPR' is the false-hit rate of a threshold fit on separate calibration prompts and shows how well it transfers.",
+        "bytes/prompt (index) excludes N-independent state; 'total' adds it (the dense float32 projection of FlyHash/SimHash); FAISS sizes are the serialised index size.",
         "Qdrant runs in embedded local mode (a NumPy scan behind a client API) and is capped at 20k prompts.",
     ]
     res.elapsed_s = time.perf_counter() - t_start
@@ -301,13 +337,19 @@ def _checks_and_headlines(cfg: dict[str, Any], res: WorkloadResult) -> None:
                           f"{fly['recall_at_1'] * 100:.1f}% vs {bf['recall_at_1'] * 100:.1f}%", fly["recall_at_1"] >= bf["recall_at_1"] - 0.05)
 
     ctx = f"N={n_head}, d={d}, 1 thread"
-    pick = lambda key: {k: (v[key], v["family"]) for k, v in sel.items()}  # noqa: E731
+    # Speed/memory are compared only between systems that recognise paraphrases: >= 99% recall@1 AND >= 95% true hits at the target FPR.
+    gate = f"recall@1 >= 99% and true-hit rate >= 95% at {cfg['target_fpr'] * 100:g}% false hits (paraphrase cosine {cfg['para_cos']:g})"
+    ok = {k: (v["recall_at_1"] >= 0.99 and v["tpr_at_fpr"] >= 0.95) for k, v in sel.items()}
+
+    def pick(key: str, gated: bool = False) -> dict[str, tuple]:
+        return {k: ((v[key], v["family"], ok[k]) if gated else (v[key], v["family"])) for k, v in sel.items()}
+
     res.headlines = [
-        headline("Cache-hit recall@1 on paraphrases", "fraction", True, ctx, pick("recall_at_1")),
-        headline(f"True-hit rate at <= {cfg['target_fpr'] * 100:g}% false hits", "fraction", True, ctx, pick("tpr_at_fpr")),
-        headline("Query throughput, single query (encode + search)", "queries/s", True, ctx, pick("qps_single")),
-        headline("Query throughput, batched", "queries/s", True, ctx, pick("qps_batch")),
-        headline("Index memory per cached prompt", "bytes", False, ctx, pick("bytes_per_prompt")),
-        headline("Index build time", "s", False, ctx, pick("build_s")),
+        headline("Cache-hit recall@1 on paraphrases", "fraction", True, ctx, pick("recall_at_1"), kind="quality"),
+        headline(f"True-hit rate at exactly {cfg['target_fpr'] * 100:g}% false hits", "fraction", True, ctx, pick("tpr_at_fpr"), kind="quality"),
+        headline("Query throughput, single query (encode + search)", "queries/s", True, ctx, pick("qps_single", True), kind="cost", gate=gate),
+        headline("Query throughput, batched", "queries/s", True, ctx, pick("qps_batch", True), kind="cost", gate=gate),
+        headline("Memory per cached prompt (index + N-independent state)", "bytes", False, ctx, pick("bytes_per_prompt_total", True), kind="cost", gate=gate),
+        headline("Index build time", "s", False, ctx, pick("build_s", True), kind="cost", gate=gate),
     ]
     res.summary = {"headline_n_cache": n_head, "dim": d}

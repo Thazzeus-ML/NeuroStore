@@ -31,6 +31,7 @@ class _AlgebraBase:
         self.rng = make_rng(seed)
         self._perm = self.rng.permutation(self.dim)
         self._perm_cache: dict[int, np.ndarray] = {1: self._perm}
+        self._inv_perm_cache: dict[int, np.ndarray] = {}
 
     def _perm_power(self, times: int) -> np.ndarray:
         if times not in self._perm_cache:
@@ -41,8 +42,13 @@ class _AlgebraBase:
     def permute(self, a: np.ndarray, times: int = 1) -> np.ndarray:
         return a[..., self._perm_power(times)]
 
+    def _inv_perm_power(self, times: int) -> np.ndarray:
+        if times not in self._inv_perm_cache:  # computed once: an argsort per call was 70% of a graph hop at D=8192
+            self._inv_perm_cache[times] = np.argsort(self._perm_power(times))
+        return self._inv_perm_cache[times]
+
     def inverse_permute(self, a: np.ndarray, times: int = 1) -> np.ndarray:
-        return a[..., np.argsort(self._perm_power(times))]
+        return a[..., self._inv_perm_power(times)]
 
     def cosine(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return cosine_matrix(a, b)

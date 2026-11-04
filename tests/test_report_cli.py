@@ -72,31 +72,58 @@ def _suite_with(headlines):
     return SuiteResult("0", "quick", 0, {}, [w])
 
 
+def _h(metric, systems, hib=True, kind="quality", gate=None):
+    return {"metric": metric, "unit": "u", "higher_is_better": hib, "context": "c", "kind": kind, "gate": gate,
+            "systems": {n: {"value": v, "family": f, "passes": p} for n, (v, f, p) in systems.items()}}
+
+
 def test_scorecard_compares_best_neurostore_against_each_competing_family():
     hs = [
-        {"metric": "recall", "unit": "%", "higher_is_better": True, "context": "c",
-         "systems": {"ns1": {"value": 90, "family": "neurostore"}, "ns2": {"value": 99, "family": "neurostore"},
-                     "kv1": {"value": 0, "family": "kv"}, "ann1": {"value": 99.5, "family": "ann"}, "ann2": {"value": 50, "family": "ann"},
-                     "lsh1": {"value": 60, "family": "lsh"}, "th": {"value": 100, "family": "theory"}}},
-        {"metric": "latency", "unit": "us", "higher_is_better": False, "context": "c",
-         "systems": {"ns": {"value": 30, "family": "neurostore"}, "kv": {"value": 0.2, "family": "kv"}}},
-        {"metric": "only ours", "unit": "x", "higher_is_better": True, "context": "c", "systems": {"ns": {"value": 1, "family": "neurostore"}}},
+        _h("recall", {"ns1": (90, "neurostore", None), "ns2": (99, "neurostore", None), "kv1": (0, "kv", None), "ann1": (99.5, "ann", None),
+                      "ann2": (50, "ann", None), "lsh1": (60, "lsh", None), "th": (100, "theory", None)}),
+        _h("only ours", {"ns": (1, "neurostore", None)}),
     ]
     rows, tally = scorecard(_suite_with(hs))
-    assert len(rows) == 3
+    assert len(rows) == 2
     assert "ns2" in rows[0][3] and "kv: 0 (kv1) **WIN**" in rows[0][4] and "ann: 99.5 (ann1) **TIE**" in rows[0][4] and "lsh: 60 (lsh1) **WIN**" in rows[0][4]
     assert "theory" not in rows[0][4]  # the analytic curve is a reference line, not a competitor
-    assert "**LOSS**" in rows[1][4] and rows[2][4] == "no baseline"
-    assert tally == {"WIN": 2, "TIE": 1, "LOSS": 1}  # row 1: kv WIN, lsh WIN, ann TIE; row 2: kv LOSS
+    assert rows[1][4] == "no baseline"
+    assert tally == {"quality": {"WIN": 2, "TIE": 1, "LOSS": 0}, "cost": {"WIN": 0, "TIE": 0, "LOSS": 0}}
+
+
+def test_cost_rows_compare_only_systems_that_pass_the_accuracy_gate():
+    """Speed must not be won by returning nothing, and NeuroStore must not be represented by a variant that fails the gate."""
+    gate = "recall >= 99%"
+    row = _h("latency", {
+        "ns_accurate_slow": (7900.0, "neurostore", True), "ns_fast_inaccurate": (1500.0, "neurostore", False),   # the fast variant fails
+        "dict": (0.2, "kv", False),                                                                              # fastest, but finds nothing
+        "faiss": (25.0, "ann", True), "lsh_robust": (600.0, "lsh", True), "lsh_fast": (50.0, "lsh", False),
+    }, hib=False, kind="cost", gate=gate)
+    rows, tally = scorecard(_suite_with([row]))
+    best, others = rows[0][3], rows[0][4]
+    assert "ns_accurate_slow" in best and "ns_fast_inaccurate" not in best      # representative chosen among those that pass
+    assert "ann: 25 (faiss) **LOSS**" in others and "lsh: 600 (lsh_robust) **LOSS**" in others
+    assert "kv:" not in others and "lsh_fast" not in others.split("excluded")[0]  # excluded systems are not competitors ...
+    listed = others.split("excluded by the gate:")[1].split("<br>")[0]
+    assert all(n in listed for n in ("dict", "lsh_fast", "ns_fast_inaccurate")) and gate in others   # ... but are listed (NeuroStore's too), with the gate
+    assert tally["cost"] == {"WIN": 0, "TIE": 0, "LOSS": 2} and tally["quality"] == {"WIN": 0, "TIE": 0, "LOSS": 0}
+
+
+def test_a_neurostore_system_that_fails_the_gate_is_reported_not_silently_compared():
+    row = _h("latency", {"ns": (10.0, "neurostore", False), "faiss": (25.0, "ann", True)}, hib=False, kind="cost", gate="accurate")
+    rows, tally = scorecard(_suite_with([row]))
+    assert "fails the gate" in rows[0][3] and rows[0][4].startswith("not compared")
+    assert tally["cost"] == {"WIN": 0, "TIE": 0, "LOSS": 0}  # nothing is counted either way
 
 
 # ----------------------------------------------------------------------------- the rendered report
 def test_report_has_every_section_and_no_nan(quick_suite):
     text = render_report(quick_suite)
-    for needle in ("# NeuroStore benchmark report", "## Scorecard", "## Checks against the evaluation spec", "Tally over", *[WORKLOADS[k].TITLE for k in WORKLOADS]):
+    for needle in ("# NeuroStore benchmark report", "## Scorecard", "## Checks against the evaluation spec", "Tally --", *[WORKLOADS[k].TITLE for k in WORKLOADS]):
         assert needle in text, needle
     assert "nan" not in text.lower().replace("financial", "") and "None" not in text
     assert text.count("MODELED") >= 1  # CIM latency is labelled as a model wherever it appears
+    assert "[cost]" in text and "excluded by the gate" in text and "Tally --" in text
     for w in quick_suite.workloads:
         for c in w.checks:
             assert c["name"].replace("|", "\\|") in text
