@@ -10,7 +10,7 @@ class ExactMatch:
     def fit(self, codes, concepts, N):
         self.table: dict = {}
         for c, cs in zip(codes, concepts):
-            self.table.setdefault(c.tobytes(), []).append(cs)
+            self.table.setdefault(np.asarray(c, np.int32).tobytes(), []).append(cs)
         self.global_rank = np.argsort(-np.bincount(np.asarray(codes).ravel(), minlength=N), kind="stable")
         single = [cs[0] for cs in concepts if len(cs) == 1]
         self.majority = (Counter(single).most_common(1)[0][0],)
