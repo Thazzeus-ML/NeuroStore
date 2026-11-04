@@ -1,0 +1,97 @@
+{
+ "gate": "PASS",
+ "gates_commit": "6d6144c",
+ "n_events": 50000,
+ "rows": [
+  {
+   "chain_tv": 0.017791180202344173,
+   "criteria": {
+    "chain_tv": true,
+    "deterministic": true,
+    "drift_exact": true,
+    "mean_concepts": true,
+    "mean_features": true,
+    "self_transition": true
+   },
+   "mean_concepts": 1.49584,
+   "mean_concepts_analytic": 1.5,
+   "mean_features": 16.930566163041675,
+   "mean_features_analytic": 16.94198033923157,
+   "seed": 0,
+   "self_transition": 0.5120302406048121,
+   "self_transition_analytic": 0.5107227670282009
+  },
+  {
+   "chain_tv": 0.021679630039028397,
+   "criteria": {
+    "chain_tv": true,
+    "deterministic": true,
+    "drift_exact": true,
+    "mean_concepts": true,
+    "mean_features": true,
+    "self_transition": true
+   },
+   "mean_concepts": 1.49952,
+   "mean_concepts_analytic": 1.5,
+   "mean_features": 16.93398077626634,
+   "mean_features_analytic": 16.94198033923157,
+   "seed": 1,
+   "self_transition": 0.5120102402048041,
+   "self_transition_analytic": 0.5104337242363889
+  },
+  {
+   "chain_tv": 0.015230989093244045,
+   "criteria": {
+    "chain_tv": true,
+    "deterministic": true,
+    "drift_exact": true,
+    "mean_concepts": true,
+    "mean_features": true,
+    "self_transition": true
+   },
+   "mean_concepts": 1.50006,
+   "mean_concepts_analytic": 1.5,
+   "mean_features": 16.942978212271864,
+   "mean_features_analytic": 16.94198033923157,
+   "seed": 2,
+   "self_transition": 0.5111902238044761,
+   "self_transition_analytic": 0.5100997831698004
+  },
+  {
+   "chain_tv": 0.015670608468793326,
+   "criteria": {
+    "chain_tv": true,
+    "deterministic": true,
+    "drift_exact": true,
+    "mean_concepts": true,
+    "mean_features": true,
+    "self_transition": true
+   },
+   "mean_concepts": 1.50118,
+   "mean_concepts_analytic": 1.5,
+   "mean_features": 16.943861052771943,
+   "mean_features_analytic": 16.94198033923157,
+   "seed": 3,
+   "self_transition": 0.5117302346046921,
+   "self_transition_analytic": 0.5102381233757589
+  },
+  {
+   "chain_tv": 0.018558127042638255,
+   "criteria": {
+    "chain_tv": true,
+    "deterministic": true,
+    "drift_exact": true,
+    "mean_concepts": true,
+    "mean_features": true,
+    "self_transition": true
+   },
+   "mean_concepts": 1.50204,
+   "mean_concepts_analytic": 1.5,
+   "mean_features": 16.92997687124996,
+   "mean_features_analytic": 16.94198033923157,
+   "seed": 4,
+   "self_transition": 0.508270165403308,
+   "self_transition_analytic": 0.5096173760371783
+  }
+ ]
+}
