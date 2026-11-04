@@ -95,3 +95,41 @@ min_seed_wins     = 4
 grid_hops         = [1, 2]
 grid_lagged_only  = [false, true]
 grid_normalize    = [true, false]
+
+[phase4]
+# Gate 4: the surprise gate saves bytes without hurting phase-2 recall.
+# Per seed, default world, train 6000 / val 1000 / test 1500. Two systems, identical except for the gate:
+#   ungated: gate = false  (every event stored with full volley)
+#   gated  : gate = true   (events with surprise <= tau logged as a count only; stored strength scaled by
+#                           max(floor, surprise))
+# Both: homeostasis OFF (isolates the gate; homeostasis has its own test below), assemblies + Hebbian lattice
+# ON, batch consolidation every 200 events with replay_budget = 150 and hot_tau = 0.3 (hot replay active).
+# Bytes written = spike-log bytes (8 + 4k per stored event; count-only events cost 0).
+# Recall = the phase-2 task at mask 0.5 (concept set-F1 and masked-unit precision@m) on the held-out test
+# stream, read-out hyper-parameters chosen on validation per system with the phase-2 grids. Assembly -> concept
+# naming uses only the STORED training events.
+# tau is chosen per seed on the validation stream from tau_grid: the LARGEST tau whose validation recall
+# (both metrics) is within tolerance of the ungated system's validation recall; if none qualifies, the smallest.
+# Pass (all three): mean over seeds 0-4 of
+#   (1 - bytes_gated/bytes_ungated) >= bytes_reduction_min
+#   F1_ungated  - F1_gated  <= recall_tolerance_abs
+#   P@m_ungated - P@m_gated <= recall_tolerance_abs
+description = "surprise gate: bytes written vs phase-2 recall"
+n_train = 6000
+n_val   = 1000
+n_test  = 1500
+mask    = 0.5
+tau_grid = [0.15, 0.25, 0.35, 0.45, 0.55]
+strength_floor = 0.25
+replay_budget  = 150
+hot_tau        = 0.3
+recall_tolerance_abs = 0.02
+bytes_reduction_min  = 0.20
+
+[phase4.homeostasis_test]
+# Test (also run by the bench script): Zipf-skewed world, thresholds adapt, per-unit firing rates in the last
+# `last_window` events must be more uniform than without homeostasis, and k must be exactly fixed.
+zipf_s = 1.5
+n_events = 8000
+last_window = 2000
+cv_ratio_max = 0.7        # CV(rates | homeostasis) <= 0.7 * CV(rates | none), every seed
