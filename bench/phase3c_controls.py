@@ -31,7 +31,7 @@ for seed in seeds:
     w = World(WorldConfig(), seed)
     tr, va, te = w.stream("train", g["n_train"]), w.stream("val", g["n_val"]), w.stream("test", g["n_test"])
     for name, kw in VARIANTS.items():
-        cfg = Config(seed=seed, homeo=False, gate=False, replay_budget=200, **kw)
+        cfg = Config(seed=seed, homeo=False, gate=False, replay_budget=200, hot_tau=0.0, **kw)
         st = NeuroStore(cfg); st.ingest(tr); st.flush()
         ev = [st.enc.encode(va.event(i)) for i in range(len(va))]; et = [st.enc.encode(te.event(i)) for i in range(len(te))]
         best = (-1, None)

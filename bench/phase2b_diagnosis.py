@@ -10,7 +10,7 @@ from eval.protocol import ConceptMap, mask_cues, prec_mean
 from eval.baselines import JaccardNN
 def run(seed, mf=0.3, **kw):
     w=World(WorldConfig(),seed); tr=w.stream("train",6000); va=w.stream("val",1000)
-    cfg=Config(seed=seed,homeo=False,gate=False,hebbian=False,replay_budget=200,**kw)
+    cfg=Config(seed=seed,homeo=False,gate=False,hebbian=False,replay_budget=200,hot_tau=0.0,**kw)
     s=NeuroStore(cfg); s.ingest(tr); s.flush(); asm=s.asm
     codes=s.log.gather(np.arange(s.log.n_stored))[0]
     vc=[s.enc.encode(va.event(i))[0] for i in range(len(va))]

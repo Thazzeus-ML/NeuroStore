@@ -47,7 +47,7 @@ def run(seed):
     wc = WorldConfig()
     w = World(wc, seed)
     tr, va, te = w.stream("train", g["n_train"]), w.stream("val", g["n_val"]), w.stream("test", g["n_test"])
-    cfg = Config(seed=seed, homeo=False, gate=False, hebbian=False, consolidate_every=200, replay_budget=200)
+    cfg = Config(seed=seed, homeo=False, gate=False, hebbian=False, consolidate_every=200, replay_budget=200, hot_tau=0.0)
     store = NeuroStore(cfg)
     t0 = time.perf_counter(); store.ingest(tr); store.flush(); t_build = time.perf_counter() - t0
     asm = store.asm

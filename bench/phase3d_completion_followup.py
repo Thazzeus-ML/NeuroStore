@@ -32,7 +32,7 @@ def top_m(score, cue, m):
 def run(seed):
     w = World(WorldConfig(), seed)
     tr, va, te = w.stream("train", g["n_train"]), w.stream("val", g["n_val"]), w.stream("test", g["n_test"])
-    st = NeuroStore(Config(seed=seed, homeo=False, gate=False, replay_budget=200)); st.ingest(tr); st.flush()
+    st = NeuroStore(Config(seed=seed, homeo=False, gate=False, replay_budget=200, hot_tau=0.0)); st.ingest(tr); st.flush()
     asm, lat = st.asm, st.lattice
     codes = st.log.gather(np.arange(st.log.n_stored))[0]
     vc = [st.enc.encode(va.event(i))[0] for i in range(len(va))]; tc = [st.enc.encode(te.event(i))[0] for i in range(len(te))]

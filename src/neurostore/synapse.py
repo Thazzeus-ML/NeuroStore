@@ -23,6 +23,7 @@ class SynapseLattice:
         self._chunks: list = []
         self.n_delta = 0
         self._dcsr = None
+        self.bytes_delta_written = 0
 
     # ------------------------------------------------------------ writes
     def tick(self):
@@ -37,6 +38,7 @@ class SynapseLattice:
         incdt = np.zeros_like(inc) if incdt is None else np.asarray(incdt, np.float32)
         self._chunks.append((pre, np.asarray(post, np.int64), inc, incdt, np.full(len(pre), self.epoch, np.int64)))
         self.n_delta += len(pre); self._dcsr = None
+        self.bytes_delta_written += len(pre) * 24
 
     def _delta_arrays(self):
         c = self._chunks

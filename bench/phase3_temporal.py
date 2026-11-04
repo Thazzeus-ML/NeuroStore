@@ -23,7 +23,7 @@ def ns_eval(store, codes, strengths, nexts, hops, lagged, norm, keep):
 def run(seed):
     w = World(WorldConfig(), seed)
     tr, va, te = w.stream("train", g["n_train"]), w.stream("val", g["n_val"]), w.stream("test", g["n_test"])
-    cfg = Config(seed=seed, homeo=False, gate=False, hebbian=True, consolidate_every=200, replay_budget=200)
+    cfg = Config(seed=seed, homeo=False, gate=False, hebbian=True, consolidate_every=200, replay_budget=200, hot_tau=0.0)
     store = NeuroStore(cfg)
     t0 = time.perf_counter(); store.ingest(tr); store.flush(); t_train = time.perf_counter() - t0
     codes = store.log.gather(np.arange(store.log.n_stored))[0]

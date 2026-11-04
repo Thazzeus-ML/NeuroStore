@@ -31,7 +31,7 @@ def run(seed):
     w = World(wc, seed)
     tr = w.stream("train", N_TRAIN); assert tr.drift_index == DRIFT
     tests = {"post": w.stream("test", 1000, phase=1, idx=1), "pre": w.stream("test", 1000, phase=0, idx=2)}
-    models = {"ns_lam0.03": Config(seed=seed, homeo=False, gate=False), "ns_lam0.15": Config(seed=seed, homeo=False, gate=False, lam=0.15)}
+    models = {"ns_lam0.03": Config(seed=seed, homeo=False, gate=False, replay_budget=200, hot_tau=0.0), "ns_lam0.15": Config(seed=seed, homeo=False, gate=False, lam=0.15, replay_budget=200, hot_tau=0.0)}
     stores = {k: NeuroStore(c) for k, c in models.items()}
     enc = SparseEncoder(wc.F, 1024, 32, 2, seed)
     all_codes = np.array([enc.encode(tr.event(i))[0] for i in range(N_TRAIN)])

@@ -20,6 +20,7 @@ class Config:
     gate: bool = True
     gate_tau: float = 0.35      # events with surprise <= tau are logged as a count only
     strength_floor: float = 0.25
+    pred_mode: str = "assembly"  # "assembly" (expect the previous event's best assembly to persist) | "lattice" (spread over synapses)
     pred_rho: float = 0.3       # expected set = predicted units with score >= rho * max
     # ---- consolidation
     consolidate: str = "batch"  # "batch" (hot replay) | "online" (learn every stored event immediately) | "off"
