@@ -138,4 +138,9 @@ def test_runner_end_to_end_on_fake_data():
     assert set(sw["variants"]) >= {"exact", "exact_l2", "vsa", "ridge"} and sw["levels"]["noise"]["L50"]["meaning"]
     rows = {r["id"]: r["verdict"] for r in EG.evaluate(out)}
     assert rows["G0"] == "NOT HELD"                                           # fast mode can never pass the provenance gate
+    rep = subprocess.run([sys.executable, "-I", str(ROOT / "studies" / "pdm_cmapss" / "make_report.py"), "--results", str(out), "--out", str(out / "REPORT.md"),
+                          "--no-narrative"], capture_output=True, text=True, timeout=300)
+    assert rep.returncode == 0, rep.stderr[-2000:]
+    text = (out / "REPORT.md").read_text()
+    assert "## Gate verdicts" in text and "| G0 | **NOT HELD** |" in text and "## E5 Latency" in text
     shutil.rmtree(out, ignore_errors=True)

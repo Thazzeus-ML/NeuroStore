@@ -1,0 +1,2735 @@
+{
+ "fd": "FD002",
+ "backends": {
+  "exact": {
+   "selected": {
+    "struct": {},
+    "k": 20,
+    "beta": 10.0,
+    "cv_rmse": 20.55494687103238,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 10.0,
+     "cv_rmse": 20.55494687103238,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 3.0,
+     "cv_rmse": 20.573421630035877,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": null,
+     "cv_rmse": 20.58864677344139,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 10.0,
+     "cv_rmse": 20.62449310598344,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 3.0,
+     "cv_rmse": 20.67950972291041,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 30.0,
+     "cv_rmse": 20.692097354107887,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": null,
+     "cv_rmse": 20.705779739371916,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 10.0,
+     "cv_rmse": 20.711842427686612,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 3.0,
+     "cv_rmse": 20.71745168340828,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": null,
+     "cv_rmse": 20.72875316299337,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 30.0,
+     "cv_rmse": 20.74275225556794,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 30.0,
+     "cv_rmse": 20.93313754616295,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 10.0,
+     "cv_rmse": 21.178467840056612,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 3.0,
+     "cv_rmse": 21.191803708805285,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": null,
+     "cv_rmse": 21.21004551549173,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 30.0,
+     "cv_rmse": 21.375759636518694,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 3.0,
+     "cv_rmse": 21.658533670533263,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": null,
+     "cv_rmse": 21.659345903264597,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 10.0,
+     "cv_rmse": 21.684302612936317,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 30.0,
+     "cv_rmse": 21.92417123210786,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 100.0,
+     "cv_rmse": 22.42200088725058,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 100.0,
+     "cv_rmse": 22.440035335897434,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 100.0,
+     "cv_rmse": 22.49150864585715,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 100.0,
+     "cv_rmse": 22.643135074508386,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 100.0,
+     "cv_rmse": 22.918989031901212,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 300.0,
+     "cv_rmse": 23.832108763583875,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 300.0,
+     "cv_rmse": 23.832630246938137,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 300.0,
+     "cv_rmse": 23.834490581212197,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 300.0,
+     "cv_rmse": 23.844215965055295,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 300.0,
+     "cv_rmse": 23.88763563666997,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": null,
+     "cv_rmse": 24.5802688224644,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 24.5802688224644,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 24.5802688224644,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 24.5802688224644,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 24.5802688224644,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 24.5802688224644,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0
+   ],
+   "seconds": 5.7,
+   "edge": {
+    "k_at_grid_edge": false,
+    "beta_at_grid_edge": false
+   }
+  },
+  "exact_l2": {
+   "selected": {
+    "struct": {},
+    "k": 50,
+    "beta": 3.0,
+    "cv_rmse": 16.871436506526628,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 3.0,
+     "cv_rmse": 16.871436506526628,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 10.0,
+     "cv_rmse": 16.876629805292104,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": null,
+     "cv_rmse": 16.877945545775226,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 3.0,
+     "cv_rmse": 17.211252371810804,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": null,
+     "cv_rmse": 17.214045053832773,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 10.0,
+     "cv_rmse": 17.230995948003184,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 30.0,
+     "cv_rmse": 17.25100606113547,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": null,
+     "cv_rmse": 17.482552071224525,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 3.0,
+     "cv_rmse": 17.496075302213935,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 10.0,
+     "cv_rmse": 17.558479252985805,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 30.0,
+     "cv_rmse": 17.63433679158691,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 30.0,
+     "cv_rmse": 18.048322988636915,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": null,
+     "cv_rmse": 18.43961371195595,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 3.0,
+     "cv_rmse": 18.45404982636558,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 10.0,
+     "cv_rmse": 18.519393722055124,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 30.0,
+     "cv_rmse": 18.949716420393855,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 3.0,
+     "cv_rmse": 19.66819922288705,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 10.0,
+     "cv_rmse": 19.67735052182463,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": null,
+     "cv_rmse": 19.679637183091554,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 30.0,
+     "cv_rmse": 19.94219702726398,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 100.0,
+     "cv_rmse": 20.42131402150201,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 100.0,
+     "cv_rmse": 20.458381316106202,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 100.0,
+     "cv_rmse": 20.55532353878602,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 100.0,
+     "cv_rmse": 20.834281092995646,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 100.0,
+     "cv_rmse": 21.257204714171934,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 50,
+     "beta": 300.0,
+     "cv_rmse": 22.489337350066908,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 20,
+     "beta": 300.0,
+     "cv_rmse": 22.489351191068945,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 10,
+     "beta": 300.0,
+     "cv_rmse": 22.489944116353648,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 5,
+     "beta": 300.0,
+     "cv_rmse": 22.50747497477365,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 3,
+     "beta": 300.0,
+     "cv_rmse": 22.56397915066024,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": null,
+     "cv_rmse": 23.370049866639796,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 23.370049866639796,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 23.370049866639796,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 23.370049866639796,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 23.370049866639796,
+     "n_cv": 2600
+    },
+    {
+     "struct": {},
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 23.370049866639796,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0
+   ],
+   "seconds": 7.8,
+   "edge": {
+    "k_at_grid_edge": true,
+    "beta_at_grid_edge": false
+   }
+  },
+  "hopfield": {
+   "selected": {
+    "struct": {
+     "metric": "l2"
+    },
+    "k": 1,
+    "beta": 30.0,
+    "cv_rmse": 17.08559538637583,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 17.08559538637583,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 18.79701264478614,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 20.412778638973265,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 22.489337450259768,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 23.16168147785212,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 1000.0,
+     "cv_rmse": 23.164988791926703,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 3000.0,
+     "cv_rmse": 23.340059126887216,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0
+   ],
+   "seconds": 60.6,
+   "edge": {
+    "k_at_grid_edge": null,
+    "beta_at_grid_edge": false
+   }
+  },
+  "ann": {
+   "selected": {
+    "struct": {
+     "nprobe": 4,
+     "sq8": false,
+     "metric": "l2"
+    },
+    "k": 50,
+    "beta": 3.0,
+    "cv_rmse": 16.92344210760898,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 3.0,
+     "cv_rmse": 16.92344210760898,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": null,
+     "cv_rmse": 16.92886817517071,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 10.0,
+     "cv_rmse": 16.940527695311783,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": null,
+     "cv_rmse": 17.12677577354932,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 3.0,
+     "cv_rmse": 17.1383829729548,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 10.0,
+     "cv_rmse": 17.20305369787652,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 30.0,
+     "cv_rmse": 17.536766285117935,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": null,
+     "cv_rmse": 17.723559035131597,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 3.0,
+     "cv_rmse": 17.73275000682734,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 10.0,
+     "cv_rmse": 17.79556841758205,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 30.0,
+     "cv_rmse": 17.86037841706589,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 30.0,
+     "cv_rmse": 18.38282113351143,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": null,
+     "cv_rmse": 18.559878978385278,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 3.0,
+     "cv_rmse": 18.571925736707033,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 10.0,
+     "cv_rmse": 18.641571371732137,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 30.0,
+     "cv_rmse": 19.15047014398818,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": null,
+     "cv_rmse": 19.55096342741633,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 3.0,
+     "cv_rmse": 19.553918012830728,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 10.0,
+     "cv_rmse": 19.60168140082426,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 30.0,
+     "cv_rmse": 19.978328054557714,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 100.0,
+     "cv_rmse": 20.811966196635737,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 100.0,
+     "cv_rmse": 20.82496208695356,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 100.0,
+     "cv_rmse": 20.88114453205927,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 100.0,
+     "cv_rmse": 21.057103584934836,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 100.0,
+     "cv_rmse": 21.35542705146833,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 300.0,
+     "cv_rmse": 22.48352501422215,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 300.0,
+     "cv_rmse": 22.48352676689343,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 300.0,
+     "cv_rmse": 22.483732361314857,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 300.0,
+     "cv_rmse": 22.491172726101478,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 300.0,
+     "cv_rmse": 22.53318821483892,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": null,
+     "cv_rmse": 23.275336346684274,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 23.275336346684274,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 23.275336346684274,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 23.275336346684274,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 23.275336346684274,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": false,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 23.275336346684274,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "seconds": 96.5,
+   "edge": {
+    "k_at_grid_edge": true,
+    "beta_at_grid_edge": false
+   }
+  },
+  "ann_sq8": {
+   "selected": {
+    "struct": {
+     "nprobe": 4,
+     "sq8": true,
+     "metric": "l2"
+    },
+    "k": 50,
+    "beta": 3.0,
+    "cv_rmse": 16.930187658181893,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 3.0,
+     "cv_rmse": 16.930187658181893,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": null,
+     "cv_rmse": 16.935896534754146,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 10.0,
+     "cv_rmse": 16.94636464356875,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": null,
+     "cv_rmse": 17.145095293646083,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 3.0,
+     "cv_rmse": 17.154635279898923,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 10.0,
+     "cv_rmse": 17.214603928133698,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 30.0,
+     "cv_rmse": 17.537926095437044,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": null,
+     "cv_rmse": 17.71513299920402,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 3.0,
+     "cv_rmse": 17.72388302862865,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 10.0,
+     "cv_rmse": 17.78554217313487,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 30.0,
+     "cv_rmse": 17.862117114505136,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 30.0,
+     "cv_rmse": 18.37225256315576,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": null,
+     "cv_rmse": 18.516236118606827,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 3.0,
+     "cv_rmse": 18.5322986609753,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 10.0,
+     "cv_rmse": 18.610310110477375,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 30.0,
+     "cv_rmse": 19.133890127258265,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": null,
+     "cv_rmse": 19.5329136357,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 3.0,
+     "cv_rmse": 19.537678800401686,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 10.0,
+     "cv_rmse": 19.590007084222496,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 30.0,
+     "cv_rmse": 19.981010024919645,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 100.0,
+     "cv_rmse": 20.80857466070418,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 100.0,
+     "cv_rmse": 20.821642298601365,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 100.0,
+     "cv_rmse": 20.87717107736929,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 100.0,
+     "cv_rmse": 21.046260432177583,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 100.0,
+     "cv_rmse": 21.36400265099828,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 50,
+     "beta": 300.0,
+     "cv_rmse": 22.46128409195678,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 20,
+     "beta": 300.0,
+     "cv_rmse": 22.461285802129385,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 10,
+     "beta": 300.0,
+     "cv_rmse": 22.461526057627413,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 5,
+     "beta": 300.0,
+     "cv_rmse": 22.4683755545295,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 3,
+     "beta": 300.0,
+     "cv_rmse": 22.515923147251055,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": null,
+     "cv_rmse": 23.255060105551664,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 23.255060105551664,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 23.255060105551664,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 23.255060105551664,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 23.255060105551664,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "nprobe": 4,
+      "sq8": true,
+      "metric": "l2"
+     },
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 23.255060105551664,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "seconds": 100.0,
+   "edge": {
+    "k_at_grid_edge": true,
+    "beta_at_grid_edge": false
+   }
+  },
+  "flyhash": {
+   "selected": {
+    "struct": {
+     "m": 1024,
+     "frac": 0.02
+    },
+    "k": 50,
+    "beta": 10.0,
+    "cv_rmse": 21.92086700453275,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 50,
+     "beta": 10.0,
+     "cv_rmse": 21.92086700453275,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 50,
+     "beta": 3.0,
+     "cv_rmse": 21.9484036351976,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 50,
+     "beta": null,
+     "cv_rmse": 21.970070115313582,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 20,
+     "beta": 3.0,
+     "cv_rmse": 22.150432676186234,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 20,
+     "beta": null,
+     "cv_rmse": 22.164955353741036,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 20,
+     "beta": 10.0,
+     "cv_rmse": 22.172530189346105,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 10,
+     "beta": 3.0,
+     "cv_rmse": 22.51006085243603,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 10,
+     "beta": null,
+     "cv_rmse": 22.52111422415498,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 10,
+     "beta": 10.0,
+     "cv_rmse": 22.56965699157319,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 50,
+     "beta": 30.0,
+     "cv_rmse": 22.782206285471517,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 20,
+     "beta": 30.0,
+     "cv_rmse": 23.136440047067456,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 5,
+     "beta": 3.0,
+     "cv_rmse": 23.301145934682523,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 5,
+     "beta": null,
+     "cv_rmse": 23.313894943485902,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 5,
+     "beta": 10.0,
+     "cv_rmse": 23.384614854406415,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 10,
+     "beta": 30.0,
+     "cv_rmse": 23.55422027914526,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 3,
+     "beta": 3.0,
+     "cv_rmse": 24.265635812623877,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 3,
+     "beta": null,
+     "cv_rmse": 24.27246749019716,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 5,
+     "beta": 30.0,
+     "cv_rmse": 24.282762800910955,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 3,
+     "beta": 10.0,
+     "cv_rmse": 24.366706069650856,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 3,
+     "beta": 30.0,
+     "cv_rmse": 25.128021375798962,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 50,
+     "beta": 100.0,
+     "cv_rmse": 26.032774390928914,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 20,
+     "beta": 100.0,
+     "cv_rmse": 26.041318600307978,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 10,
+     "beta": 100.0,
+     "cv_rmse": 26.069659613394954,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 5,
+     "beta": 100.0,
+     "cv_rmse": 26.184448567827022,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 10,
+     "beta": 300.0,
+     "cv_rmse": 26.252558764019152,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 50,
+     "beta": 300.0,
+     "cv_rmse": 26.252588455212624,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 20,
+     "beta": 300.0,
+     "cv_rmse": 26.253584635099322,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 5,
+     "beta": 300.0,
+     "cv_rmse": 26.30138067818284,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 3,
+     "beta": 100.0,
+     "cv_rmse": 26.414655589145386,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 3,
+     "beta": 300.0,
+     "cv_rmse": 26.48044699593238,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 1,
+     "beta": null,
+     "cv_rmse": 28.624160496031394,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 28.624160496031394,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 28.624160496031394,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 28.624160496031394,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 28.624160496031394,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "m": 1024,
+      "frac": 0.02
+     },
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 28.624160496031394,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "seconds": 25.4,
+   "edge": {
+    "k_at_grid_edge": true,
+    "beta_at_grid_edge": false
+   }
+  },
+  "vsa": {
+   "selected": {
+    "struct": {
+     "D": 4096
+    },
+    "k": 50,
+    "beta": 100.0,
+    "cv_rmse": 17.932192583884728,
+    "n_cv": 2600,
+    "rule": "min_cv_rmse"
+   },
+   "rows": [
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 50,
+     "beta": 100.0,
+     "cv_rmse": 17.932192583884728,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 20,
+     "beta": 30.0,
+     "cv_rmse": 17.96654857960721,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 20,
+     "beta": 10.0,
+     "cv_rmse": 17.97648400828118,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 20,
+     "beta": 3.0,
+     "cv_rmse": 17.980803168375367,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 20,
+     "beta": 100.0,
+     "cv_rmse": 17.980813245635044,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 20,
+     "beta": null,
+     "cv_rmse": 17.982766652391366,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 50,
+     "beta": 30.0,
+     "cv_rmse": 18.011596678918703,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 50,
+     "beta": 10.0,
+     "cv_rmse": 18.039455422294,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 50,
+     "beta": 3.0,
+     "cv_rmse": 18.049281681376456,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 50,
+     "beta": null,
+     "cv_rmse": 18.05349340155528,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 10,
+     "beta": 30.0,
+     "cv_rmse": 18.36020202819414,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 10,
+     "beta": 10.0,
+     "cv_rmse": 18.36422379469191,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 10,
+     "beta": 3.0,
+     "cv_rmse": 18.367100777526097,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 10,
+     "beta": null,
+     "cv_rmse": 18.36853929678231,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 10,
+     "beta": 100.0,
+     "cv_rmse": 18.416436695092774,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 50,
+     "beta": 300.0,
+     "cv_rmse": 18.58563106061137,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 20,
+     "beta": 300.0,
+     "cv_rmse": 18.868657644397793,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 5,
+     "beta": 30.0,
+     "cv_rmse": 19.239753715253563,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 5,
+     "beta": 10.0,
+     "cv_rmse": 19.241592376330683,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 5,
+     "beta": 3.0,
+     "cv_rmse": 19.244365995214633,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 5,
+     "beta": null,
+     "cv_rmse": 19.24587095243935,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 5,
+     "beta": 100.0,
+     "cv_rmse": 19.316124642179485,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 10,
+     "beta": 300.0,
+     "cv_rmse": 19.331118153615456,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 5,
+     "beta": 300.0,
+     "cv_rmse": 20.117370119226194,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 3,
+     "beta": 10.0,
+     "cv_rmse": 20.278827454699577,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 3,
+     "beta": 3.0,
+     "cv_rmse": 20.279887223316763,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 3,
+     "beta": null,
+     "cv_rmse": 20.280682850094003,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 3,
+     "beta": 30.0,
+     "cv_rmse": 20.282173416013084,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 3,
+     "beta": 100.0,
+     "cv_rmse": 20.370596704958874,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 3,
+     "beta": 300.0,
+     "cv_rmse": 21.019217600447565,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 1,
+     "beta": null,
+     "cv_rmse": 24.69669343589677,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 1,
+     "beta": 3.0,
+     "cv_rmse": 24.69669343589677,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 1,
+     "beta": 10.0,
+     "cv_rmse": 24.69669343589677,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 1,
+     "beta": 30.0,
+     "cv_rmse": 24.69669343589677,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 1,
+     "beta": 100.0,
+     "cv_rmse": 24.69669343589677,
+     "n_cv": 2600
+    },
+    {
+     "struct": {
+      "D": 4096
+     },
+     "k": 1,
+     "beta": 300.0,
+     "cv_rmse": 24.69669343589677,
+     "n_cv": 2600
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "seconds": 181.4,
+   "edge": {
+    "k_at_grid_edge": true,
+    "beta_at_grid_edge": false
+   }
+  }
+ },
+ "cv": {
+  "folds": 5,
+  "queries": 2600,
+  "engines": 260,
+  "n_windows": 53759
+ },
+ "meta": {
+  "stage": "tune",
+  "git_head": "1cc74c3cad3163388854166d5d9b51d45624fbc1",
+  "dirty_code": false,
+  "protocol_sha256": "1e951b7940fc018552ab44992ebed8a242f3934f8a54b0ce7d0943bd0944982a",
+  "data_sums": {
+   "readme.txt": "4f5270554b775c67e73aff383c5436fd329d6e4cc3d3a116913276fae511269b",
+   "train_FD001.txt": "963b5e22825b34d8b21c69e1aeb4af3e647050eb672ee8834ba4b5d91d2de0f8",
+   "test_FD001.txt": "3cda7109ce17bafb5443f2ac926cfcf88154b941b8c4cf95eb55d1ddd6f52851",
+   "RUL_FD001.txt": "a19c8ec94931949d0485bdc35118206e9c81c4547b422efb9cf86f4ceddbceca",
+   "train_FD002.txt": "dac6c4dbc4e7c1bdeb5747da3d313d05c395bb99801b44a002b26a2ba13d788f",
+   "test_FD002.txt": "de7b5bf7e998a985c378488480528b7c02cff1406a46740def362dda8d9b4e02",
+   "RUL_FD002.txt": "c851dd96a6ea6998d3c4a8f834d3c8013aa90e93a6ed950dc826ad0655b2906b",
+   "train_FD003.txt": "2abbe9968cc5e8eb091980f51b20f62bb4127336d3482cb52071d53bf23329e2",
+   "test_FD003.txt": "299babd63c8d987cef079c4a425429f33b3a34797d803bbe2ad48c29dbd0d790",
+   "RUL_FD003.txt": "df1e0566306b174a2de41c67a3e7a51877889598b78643fc3e5685259091b7cb",
+   "train_FD004.txt": "27ef6160b6a1dcb2613a88de9c239f763b223f02cdc41dc5cdedc5dc189b6218",
+   "test_FD004.txt": "1dc675fff0624bac10786927c6715b37d1297657137400d2b1a3138d777a3ba5",
+   "RUL_FD004.txt": "196b836b85a95ac7fdbbf29c5fdf1657382eafa445644d114ffaaf50dc2975e1"
+  },
+  "fast": false,
+  "config": {
+   "ANN_RULE_TOL": 1.02,
+   "BACKEND_OF": {
+    "exact": "exact",
+    "exact_l2": "exact_l2",
+    "hopfield": "hopfield",
+    "ann": "ann",
+    "ann_sq8": "ann",
+    "flyhash": "flyhash",
+    "vsa": "vsa"
+   },
+   "BETAS": [
+    null,
+    3.0,
+    10.0,
+    30.0,
+    100.0,
+    300.0
+   ],
+   "CALIB_SEED": 100,
+   "CAP": 125,
+   "CHIMERA_BANDS": {
+    "same": [
+     0.0,
+     5.0
+    ],
+    "mid": [
+     30.0,
+     60.0
+    ],
+    "far": [
+     80.0,
+     125.0
+    ]
+   },
+   "CHIMERA_KINDS": [
+    "channel",
+    "time"
+   ],
+   "CHIMERA_N": 500,
+   "COMPLETION_SEVERITIES": [
+    0.1,
+    0.3,
+    0.5
+   ],
+   "CORRUPTION_SEEDS": [
+    0,
+    1
+   ],
+   "CV_FOLDS": 5,
+   "CV_MIN_T": 30,
+   "CV_PER_GROUP": 10,
+   "CV_SEED": 0,
+   "FAMILIES": [
+    "noise",
+    "dropout",
+    "stuck",
+    "drift",
+    "spikes",
+    "quantize",
+    "combined"
+   ],
+   "FEAT": {
+    "kind": "stats",
+    "standardize": true
+   },
+   "FOREIGN": [
+    "FD002",
+    "FD003",
+    "FD004"
+   ],
+   "HOPFIELD_BETAS": [
+    3.0,
+    10.0,
+    30.0,
+    100.0,
+    300.0,
+    1000.0,
+    3000.0
+   ],
+   "KS": [
+    1,
+    3,
+    5,
+    10,
+    20,
+    50
+   ],
+   "LATENCY_SAMPLES": 1000,
+   "LEVELS": {
+    "L25": 1.25,
+    "L50": 1.5,
+    "L100": 2.0
+   },
+   "MASK_FAMILIES": [
+    "dropout",
+    "combined"
+   ],
+   "MIN_UNIQUE": 10,
+   "N_BOOT": {
+    "table": 500,
+    "paired": 1000,
+    "auroc": 300
+   },
+   "OOD_LATE_RUL": 50,
+   "OOD_MAX_FOREIGN": 800,
+   "OOD_STRIDE": 5,
+   "PRIMARY": "FD001",
+   "READOUT_GRID": [
+    [
+     1,
+     null
+    ],
+    [
+     1,
+     3.0
+    ],
+    [
+     1,
+     10.0
+    ],
+    [
+     1,
+     30.0
+    ],
+    [
+     1,
+     100.0
+    ],
+    [
+     1,
+     300.0
+    ],
+    [
+     3,
+     null
+    ],
+    [
+     3,
+     3.0
+    ],
+    [
+     3,
+     10.0
+    ],
+    [
+     3,
+     30.0
+    ],
+    [
+     3,
+     100.0
+    ],
+    [
+     3,
+     300.0
+    ],
+    [
+     5,
+     null
+    ],
+    [
+     5,
+     3.0
+    ],
+    [
+     5,
+     10.0
+    ],
+    [
+     5,
+     30.0
+    ],
+    [
+     5,
+     100.0
+    ],
+    [
+     5,
+     300.0
+    ],
+    [
+     10,
+     null
+    ],
+    [
+     10,
+     3.0
+    ],
+    [
+     10,
+     10.0
+    ],
+    [
+     10,
+     30.0
+    ],
+    [
+     10,
+     100.0
+    ],
+    [
+     10,
+     300.0
+    ],
+    [
+     20,
+     null
+    ],
+    [
+     20,
+     3.0
+    ],
+    [
+     20,
+     10.0
+    ],
+    [
+     20,
+     30.0
+    ],
+    [
+     20,
+     100.0
+    ],
+    [
+     20,
+     300.0
+    ],
+    [
+     50,
+     null
+    ],
+    [
+     50,
+     3.0
+    ],
+    [
+     50,
+     10.0
+    ],
+    [
+     50,
+     30.0
+    ],
+    [
+     50,
+     100.0
+    ],
+    [
+     50,
+     300.0
+    ]
+   ],
+   "RECALL_PANEL": {
+    "D": 512,
+    "N": 2048,
+    "p": [
+     0.1,
+     0.2,
+     0.3,
+     0.35,
+     0.4
+    ],
+    "queries": 2000
+   },
+   "REFERENCE_CANDIDATES": [
+    "exact",
+    "exact_l2"
+   ],
+   "RIDGE_LAMBDAS": [
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+   ],
+   "SCALE_D": 56,
+   "SCALE_LATENCY_SAMPLES": 500,
+   "SCALE_NPROBES": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64
+   ],
+   "SCALE_RECALL_TARGET": 0.9,
+   "SCALE_SIZES": {
+    "exact": [
+     20000,
+     100000,
+     500000
+    ],
+    "ann": [
+     20000,
+     100000,
+     500000
+    ],
+    "ann_sq8": [
+     20000,
+     100000,
+     500000
+    ],
+    "flyhash": [
+     20000,
+     100000
+    ],
+    "vsa": [
+     20000,
+     100000
+    ]
+   },
+   "SEEDS": [
+    0,
+    1,
+    2
+   ],
+   "STOCHASTIC": [
+    "ann",
+    "ann_sq8",
+    "flyhash",
+    "vsa"
+   ],
+   "STRUCT_GRID": {
+    "exact": [
+     {}
+    ],
+    "exact_l2": [
+     {}
+    ],
+    "hopfield": [
+     {}
+    ],
+    "ann": [
+     {
+      "nprobe": 1,
+      "sq8": false
+     },
+     {
+      "nprobe": 2,
+      "sq8": false
+     },
+     {
+      "nprobe": 4,
+      "sq8": false
+     },
+     {
+      "nprobe": 8,
+      "sq8": false
+     },
+     {
+      "nprobe": 16,
+      "sq8": false
+     }
+    ],
+    "ann_sq8": [
+     {
+      "nprobe": 1,
+      "sq8": true
+     },
+     {
+      "nprobe": 2,
+      "sq8": true
+     },
+     {
+      "nprobe": 4,
+      "sq8": true
+     },
+     {
+      "nprobe": 8,
+      "sq8": true
+     },
+     {
+      "nprobe": 16,
+      "sq8": true
+     }
+    ],
+    "flyhash": [
+     {
+      "m": 1024,
+      "frac": 0.02
+     },
+     {
+      "m": 1024,
+      "frac": 0.05
+     },
+     {
+      "m": 1024,
+      "frac": 0.1
+     },
+     {
+      "m": 2048,
+      "frac": 0.02
+     },
+     {
+      "m": 2048,
+      "frac": 0.05
+     },
+     {
+      "m": 2048,
+      "frac": 0.1
+     },
+     {
+      "m": 4096,
+      "frac": 0.02
+     },
+     {
+      "m": 4096,
+      "frac": 0.05
+     },
+     {
+      "m": 4096,
+      "frac": 0.1
+     }
+    ],
+    "vsa": [
+     {
+      "D": 2048
+     },
+     {
+      "D": 4096
+     }
+    ]
+   },
+   "SUBSETS": [
+    "FD001",
+    "FD002",
+    "FD003",
+    "FD004"
+   ],
+   "THROUGHPUT_BATCH": 256,
+   "THROUGHPUT_REPEATS": 3,
+   "THROUGHPUT_SECONDS": 0.5,
+   "VALIDATE_CONFIGS": [
+    [
+     256,
+     512,
+     0.35
+    ],
+    [
+     256,
+     512,
+     0.4
+    ],
+    [
+     512,
+     512,
+     0.4
+    ],
+    [
+     1024,
+     1024,
+     0.44
+    ],
+    [
+     128,
+     256,
+     0.3
+    ]
+   ],
+   "VALIDATE_QUERIES": 4000,
+   "VALIDATE_Z": 3.0,
+   "WINDOW": 30
+  },
+  "env": {
+   "python": "3.13.18",
+   "numpy": "2.5.3",
+   "machine": "x86_64",
+   "cpus": 4,
+   "threads_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+   },
+   "blas": "scipy-openblas"
+  },
+  "seconds": 497.1,
+  "utc": "2026-11-04T21:55:18Z"
+ },
+ "reference": "exact_l2",
+ "metric": "l2",
+ "baselines": {
+  "const_cv_rmse": 42.461888017883055,
+  "ridge_cv_by_lambda": {
+   "0.01": 18.544604669573186,
+   "0.1": 18.544598090513002,
+   "1.0": 18.5445324995236,
+   "10.0": 18.5438958304644,
+   "100.0": 18.538950447304476,
+   "1000.0": 18.529222941516444
+  },
+  "ridge_lambda": 1000.0,
+  "ridge_cv_rmse": 18.529222941516444
+ }
+}

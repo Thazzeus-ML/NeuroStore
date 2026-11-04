@@ -44,6 +44,12 @@ make pdm-gates    # mechanical HELD / NOT HELD verdicts
 make pdm-report   # studies/pdm_cmapss/REPORT.md from the result files
 ```
 
+**PdM-1 results** (`studies/pdm_cmapss/REPORT.md`, generated from `results/pdm_cmapss/`; 9 of 15 pre-registered gate rows HELD). On the FD001
+official test the Euclidean exact store reaches RMSE 13.8 cycles against 43.1 for a constant and 17.3 for ridge; Hopfield attention matches
+it, IVF/SQ8 is about 6 % behind at 0.31x the bytes, VSA 12 % behind but the most robust to injected corruption, FlyHash 49 % behind. The
+similarity function mattered more than the storage format (cosine 1.56x worse than Euclidean), and a store must be told which sensors are
+dead (mask-aware completion NMSE 0.30 against 1.42 without). C-MAPSS is simulated, so none of this speaks to natural field corruption.
+
 ## Colab benchmark notebook (`colab/`)
 
 `colab/REVIEW.md` reviews an uploaded GPU/TPU Colab notebook for the report's FlyHash / SDM / VSA / Hopfield ideas, with every

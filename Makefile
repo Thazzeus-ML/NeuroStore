@@ -1,7 +1,7 @@
 PY ?= python3
 export PYTHONPATH := src:.
 
-.PHONY: test bench report clean colab-build colab-validate colab-review pdm-fetch pdm-study pdm-gates pdm-report
+.PHONY: test bench report clean colab-build colab-validate colab-review pdm-fetch pdm-study pdm-gates pdm-report pdm-figures
 test:
 	$(PY) -m pytest
 
@@ -41,3 +41,8 @@ pdm-gates:
 
 pdm-report:
 	$(PY) -I studies/pdm_cmapss/make_report.py
+
+# figures need matplotlib (optional; the committed PNGs are used when it is missing): FIG_PY=/path/to/python-with-matplotlib make pdm-figures
+FIG_PY ?= $(PY)
+pdm-figures:
+	$(FIG_PY) studies/pdm_cmapss/make_figures.py
