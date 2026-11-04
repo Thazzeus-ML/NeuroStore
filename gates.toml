@@ -61,7 +61,7 @@ n_test  = 1500
 masks   = [0.3, 0.5, 0.7]
 # Pass conditions, BOTH metrics at EVERY mask level, mean over seeds 0-4:
 beat_exact_margin_abs   = 0.05          # NS metric >= exact-match metric + margin, on the mean AND on every seed
-approach_ratio          = {0.3 = 0.90, 0.5 = 0.90, 0.7 = 0.80}   # NS metric >= ratio * kNN-reference metric (mean over seeds)
+approach_ratio          = {"0.3" = 0.90, "0.5" = 0.90, "0.7" = 0.80}   # NS metric >= ratio * kNN-reference metric (mean over seeds)
 # cost (query latency, index bytes, build time) is reported, not gated.
 grid_ns_rho        = [0.5, 0.7, 0.85]
 grid_ns_cos_min    = [0.05, 0.10, 0.15, 0.20]
